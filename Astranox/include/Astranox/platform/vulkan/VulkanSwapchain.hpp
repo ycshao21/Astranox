@@ -16,11 +16,18 @@ namespace Astranox
 
         void destroy();
 
+    public:
+        VkRenderPass getVkRenderPass() const { return m_RenderPass; }
+        VkExtent2D getSwapchainExtent() const { return m_SwapchainExtent; }
+
     private:
         void chooseSurfaceFormat();
 
         void getQueueIndices();
         void getSwapchainImages();
+
+        void createRenderPass();
+        void createFramebuffers();
 
         // [TODO] Remove
 
@@ -45,5 +52,8 @@ namespace Astranox
             VkImageView imageView;
         };
         std::vector<SwapchainImage> m_Images;
+
+        VkRenderPass m_RenderPass = VK_NULL_HANDLE;
+        std::vector<VkFramebuffer> m_Framebuffers;
     };
 }

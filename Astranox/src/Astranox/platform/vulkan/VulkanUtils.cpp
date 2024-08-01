@@ -129,16 +129,19 @@ namespace Astranox
         {
             if (type == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU)
             {
-                return "INTEGRATED_GPU";
+                return "Integrated GPU";
             } else if (type == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
             {
-                return "DISCRETE_GPU";
+                return "Discrete GPU";
             } else if (type == VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU)
             {
-                return "VIRTUAL_GPU";
+                return "Virtual GPU";
             } else if (type == VK_PHYSICAL_DEVICE_TYPE_CPU)
             {
                 return "CPU";
+            } else
+            {
+                return "Other";
             }
         }
     }

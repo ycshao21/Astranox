@@ -25,6 +25,7 @@ namespace Astranox
         static VkInstance getInstance() { return s_Instance; }
         Ref<VulkanPhysicalDevice> getPhysicalDevice() { return m_PhysicalDevice; }
         Ref<VulkanDevice> getDevice() { return m_Device; }
+        Ref<VulkanSwapchain> getSwapchain() { return m_Swapchain; }
 
     private:
         void createInstance();

@@ -115,10 +115,21 @@ namespace Astranox
         VK_CHECK(result);
 
         getSwapchainImages();
+
+        createRenderPass();
+        createFramebuffers();
     }
 
     void VulkanSwapchain::destroy()
     {
+        for (auto framebuffer : m_Framebuffers)
+        {
+            ::vkDestroyFramebuffer(m_Device->getRaw(), framebuffer, nullptr);
+        }
+        m_Framebuffers.clear();
+
+        ::vkDestroyRenderPass(m_Device->getRaw(), m_RenderPass, nullptr);
+
         for (auto& image : m_Images)
         {
             ::vkDestroyImageView(m_Device->getRaw(), image.imageView, nullptr);
@@ -189,13 +200,16 @@ namespace Astranox
 
     void VulkanSwapchain::getSwapchainImages()
     {
+        // Get images >>>
         uint32_t imageCount = 0;
         ::vkGetSwapchainImagesKHR(m_Device->getRaw(), m_Swapchain, &imageCount, nullptr);
         AST_CORE_ASSERT(imageCount != 0, "Failed to get swapchain images");
 
         std::vector<VkImage> images(imageCount);
         ::vkGetSwapchainImagesKHR(m_Device->getRaw(), m_Swapchain, &imageCount, images.data());
+        // <<< Get images
 
+        // Create image views >>>
         m_Images.resize(imageCount);
         for (size_t i = 0; i < m_Images.size(); i++)
         {
@@ -217,6 +231,84 @@ namespace Astranox
             createInfo.subresourceRange.layerCount = 1;
 
             VkResult result = ::vkCreateImageView(m_Device->getRaw(), &createInfo, nullptr, &m_Images[i].imageView);
+            VK_CHECK(result);
+        }
+        // <<< Create image views
+    }
+
+    void VulkanSwapchain::createRenderPass()
+    {
+        VkAttachmentDescription colorAttachment{
+            .flags = 0,
+            .format = m_ImageFormat,
+            .samples = VK_SAMPLE_COUNT_1_BIT,
+            .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+            .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+            .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+            .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+            .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+            .finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
+        };
+
+        VkAttachmentReference colorAttachmentRef{
+            .attachment = 0,
+            .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+        };
+
+        VkSubpassDescription subpass{
+            .flags = 0,
+            .pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
+            .inputAttachmentCount = 0,
+            .pInputAttachments = nullptr,
+            .colorAttachmentCount = 1,
+            .pColorAttachments = &colorAttachmentRef,
+            .pResolveAttachments = nullptr,
+            .pDepthStencilAttachment = nullptr,
+            .preserveAttachmentCount = 0,
+            .pPreserveAttachments = nullptr
+        };
+
+        VkRenderPassCreateInfo renderPassInfo{
+            .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+            .attachmentCount = 1,
+            .pAttachments = &colorAttachment,
+            .subpassCount = 1,
+            .pSubpasses = &subpass,
+            .dependencyCount = 0,
+            .pDependencies = nullptr
+        };
+
+        VkResult result = ::vkCreateRenderPass(m_Device->getRaw(), &renderPassInfo, nullptr, &m_RenderPass);
+        VK_CHECK(result);
+    }
+
+    void VulkanSwapchain::createFramebuffers()
+    {
+        m_Framebuffers.resize(m_Images.size());
+
+        VkFramebufferCreateInfo createInfo = {
+            .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+            .renderPass = m_RenderPass,
+            .attachmentCount = 1,
+            .width = m_SwapchainExtent.width,
+            .height = m_SwapchainExtent.height,
+            .layers = 1
+        };
+
+        for (size_t i = 0; i < m_Framebuffers.size(); ++i)
+        {
+            createInfo.pAttachments = &m_Images[i].imageView;
+
+            VkResult result = ::vkCreateFramebuffer(
+                m_Device->getRaw(),
+                &createInfo,
+                nullptr,
+                &m_Framebuffers[i]
+            );
             VK_CHECK(result);
         }
     }
