@@ -75,21 +75,30 @@ namespace Astranox
         }
         // <<< Choose present mode
 
-
         uint32_t desiredImageCount = surfaceCapabilities.minImageCount + 1;
         if (surfaceCapabilities.maxImageCount > 0 && desiredImageCount > surfaceCapabilities.maxImageCount) {
             desiredImageCount = surfaceCapabilities.maxImageCount;
         }
 
-        VkSwapchainCreateInfoKHR createInfo{};
-        createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-        createInfo.surface = m_Surface;
-        createInfo.minImageCount = desiredImageCount;
-        createInfo.imageFormat = m_ImageFormat;
-        createInfo.imageColorSpace = m_ColorSpace;
-        createInfo.imageExtent = m_SwapchainExtent;
-        createInfo.imageArrayLayers = 1;
-        createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+        VkSwapchainKHR oldSwapchain = m_Swapchain;
+
+        VkSwapchainCreateInfoKHR createInfo{
+            .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+            .pNext = nullptr,
+            .flags = 0,
+            .surface = m_Surface,
+            .minImageCount = desiredImageCount,
+            .imageFormat = m_ImageFormat,
+            .imageColorSpace = m_ColorSpace,
+            .imageExtent = m_SwapchainExtent,
+            .imageArrayLayers = 1,
+            .imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+            .preTransform = surfaceCapabilities.currentTransform,
+            .compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+            .presentMode = presentMode,
+            .clipped = VK_TRUE,
+            .oldSwapchain = oldSwapchain
+        };
 
         std::vector<uint32_t> queueFamilyIndices = { m_GraphicsQueueIndex, m_PresentQueueIndex };
         if (m_GraphicsQueueIndex == m_PresentQueueIndex) {  // We prefer exclusive mode
@@ -101,12 +110,6 @@ namespace Astranox
             createInfo.queueFamilyIndexCount = static_cast<uint32_t>(queueFamilyIndices.size());
             createInfo.pQueueFamilyIndices = queueFamilyIndices.data();
         }
-
-        createInfo.preTransform = surfaceCapabilities.currentTransform;
-        createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-        createInfo.presentMode = presentMode;
-        createInfo.clipped = VK_TRUE;
-        createInfo.oldSwapchain = VK_NULL_HANDLE;
 
         result = ::vkCreateSwapchainKHR(m_Device->getRaw(), &createInfo, nullptr, &m_Swapchain);
         VK_CHECK(result);

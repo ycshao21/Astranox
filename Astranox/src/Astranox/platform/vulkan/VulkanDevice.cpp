@@ -15,39 +15,51 @@ namespace Astranox
         float queuePriority = 1.0f;
         auto& queueFamilyIndices = m_PhysicalDevice->getQueueIndices();
 
-        VkDeviceQueueCreateInfo graphicsQueueCreateInfo{};
-        graphicsQueueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-        graphicsQueueCreateInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
-        graphicsQueueCreateInfo.queueCount = 1;
-        graphicsQueueCreateInfo.pQueuePriorities = &queuePriority;
-        queueCreateInfos.push_back(std::move(graphicsQueueCreateInfo));
+        VkDeviceQueueCreateInfo graphicsQueueCreateInfo{
+            .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+            .queueFamilyIndex = queueFamilyIndices.graphicsFamily.value(),
+            .queueCount = 1,
+            .pQueuePriorities = &queuePriority
+        };
+        queueCreateInfos.push_back(graphicsQueueCreateInfo);
 
-        VkDeviceQueueCreateInfo computeQueueCreateInfo{};
-        computeQueueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-        computeQueueCreateInfo.queueFamilyIndex = queueFamilyIndices.computeFamily.value();
-        computeQueueCreateInfo.queueCount = 1;
-        computeQueueCreateInfo.pQueuePriorities = &queuePriority;
-        queueCreateInfos.push_back(std::move(computeQueueCreateInfo));
+        VkDeviceQueueCreateInfo computeQueueCreateInfo{
+            .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+            .queueFamilyIndex = queueFamilyIndices.computeFamily.value(),
+            .queueCount = 1,
+            .pQueuePriorities = &queuePriority
+        };
+        queueCreateInfos.push_back(computeQueueCreateInfo);
 
-        VkDeviceQueueCreateInfo transferQueueCreateInfo{};
-        transferQueueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-        transferQueueCreateInfo.queueFamilyIndex = queueFamilyIndices.transferFamily.value();
-        transferQueueCreateInfo.queueCount = 1;
-        transferQueueCreateInfo.pQueuePriorities = &queuePriority;
-        queueCreateInfos.push_back(std::move(transferQueueCreateInfo));
+        VkDeviceQueueCreateInfo transferQueueCreateInfo{
+            .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+            .queueFamilyIndex = queueFamilyIndices.transferFamily.value(),
+            .queueCount = 1,
+            .pQueuePriorities = &queuePriority
+        };
+        queueCreateInfos.push_back(transferQueueCreateInfo);
 
-        VkDeviceCreateInfo createInfo{};
-        createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-        createInfo.queueCreateInfoCount = (uint32_t)queueCreateInfos.size();
-        createInfo.pQueueCreateInfos = queueCreateInfos.data();
+        VkDeviceCreateInfo createInfo{
+            .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+            .queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size()),
+            .pQueueCreateInfos = queueCreateInfos.data(),
+            .enabledExtensionCount = static_cast<uint32_t>(VulkanUtils::deviceExtensions.size()),
+            .ppEnabledExtensionNames = VulkanUtils::deviceExtensions.data(),
+            .pEnabledFeatures = &m_PhysicalDevice->getFeatures()
+        };
         if (VK_ENABLE_VALIDATION_LAYERS)
         {
             createInfo.enabledLayerCount = static_cast<uint32_t>(VulkanUtils::validationLayers.size());
             createInfo.ppEnabledLayerNames = VulkanUtils::validationLayers.data();
         }
-        createInfo.enabledExtensionCount = (uint32_t)VulkanUtils::deviceExtensions.size();
-        createInfo.ppEnabledExtensionNames = VulkanUtils::deviceExtensions.data();
-        createInfo.pEnabledFeatures = &m_PhysicalDevice->getFeatures();
 
         VkResult result = ::vkCreateDevice(m_PhysicalDevice->getRaw(), &createInfo, nullptr, &m_Device);
         VK_CHECK(result);

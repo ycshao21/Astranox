@@ -32,5 +32,7 @@ namespace Astranox
 
         std::string vkResultToString(VkResult result);
         void checkResult(VkResult result);
+
+        std::string vkPhysicalDeviceTypeToString(VkPhysicalDeviceType type);
     }
 }

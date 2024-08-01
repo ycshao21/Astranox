@@ -1,6 +1,7 @@
 #include "pch.hpp"
 #include "Astranox/platform/vulkan/VulkanContext.hpp"
 #include "Astranox/platform/vulkan/VulkanPhysicalDevice.hpp"
+#include "Astranox/platform/vulkan/VulkanUtils.hpp"
 
 namespace Astranox
 {
@@ -11,12 +12,12 @@ namespace Astranox
         uint32_t physicalDeviceCount = 0;
         ::vkEnumeratePhysicalDevices(vkInstance, &physicalDeviceCount, nullptr);
         AST_CORE_ASSERT(physicalDeviceCount != 0, "Failed to find GPUs with Vulkan support!");
-        AST_CORE_DEBUG("Found {0} GPUs with Vulkan support.", physicalDeviceCount);
+        AST_CORE_INFO("Found {0} GPUs with Vulkan support.", physicalDeviceCount);
 
         std::vector<VkPhysicalDevice> physicalDevices(physicalDeviceCount);
         ::vkEnumeratePhysicalDevices(vkInstance, &physicalDeviceCount, physicalDevices.data());
 
-        // Find a suitable GPU >>>
+        // Find a suitable physical device >>>
         m_PhysicalDevice = VK_NULL_HANDLE;
         for (auto physicalDevice : physicalDevices)
         {
@@ -33,7 +34,7 @@ namespace Astranox
 
         if (m_PhysicalDevice == VK_NULL_HANDLE)
         {
-            AST_CORE_ERROR("Failed to find a suitable GPU! Falling back to the first one.");
+            AST_CORE_ERROR("Failed to find a suitable physical device! Falling back to the first one.");
 
             m_PhysicalDevice = physicalDevices[0];
 
@@ -41,8 +42,14 @@ namespace Astranox
             vkGetPhysicalDeviceFeatures(m_PhysicalDevice, &m_Features);
             vkGetPhysicalDeviceMemoryProperties(m_PhysicalDevice, &m_MemoryProperties);
         }
-        AST_CORE_TRACE("Selected GPU: {0}", m_Properties.deviceName);
-        // <<< Find a suitable GPU
+        AST_CORE_INFO("Selected physical device:");
+        AST_CORE_INFO("  - Name: {0}", m_Properties.deviceName);
+        AST_CORE_INFO("  - Driver version: {0}", m_Properties.driverVersion);
+        AST_CORE_INFO("  - Vendor ID: {0}", m_Properties.vendorID);
+        AST_CORE_INFO("  - Device ID: {0}", m_Properties.deviceID);
+        AST_CORE_INFO("  - Device type: {0}", VulkanUtils::vkPhysicalDeviceTypeToString(m_Properties.deviceType));
+        AST_CORE_INFO("  - API version: {0}", m_Properties.apiVersion);
+        // <<< Find a suitable physical device
 
         // Get queue family properties >>>
         uint32_t queueFamilyCount = 0;

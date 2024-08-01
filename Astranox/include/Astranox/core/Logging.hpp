@@ -1,4 +1,5 @@
 #pragma once
+#include <spdlog/logger.h>
 
 namespace Astranox {
 

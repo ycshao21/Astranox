@@ -125,6 +125,21 @@ namespace Astranox
             AST_CORE_ASSERT(result == VK_SUCCESS, "Vulkan error: {0}", vkResultToString(result));
         }
 
-
+        std::string vkPhysicalDeviceTypeToString(VkPhysicalDeviceType type)
+        {
+            if (type == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU)
+            {
+                return "INTEGRATED_GPU";
+            } else if (type == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
+            {
+                return "DISCRETE_GPU";
+            } else if (type == VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU)
+            {
+                return "VIRTUAL_GPU";
+            } else if (type == VK_PHYSICAL_DEVICE_TYPE_CPU)
+            {
+                return "CPU";
+            }
+        }
     }
 }

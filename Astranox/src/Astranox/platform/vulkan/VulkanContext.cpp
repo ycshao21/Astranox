@@ -70,29 +70,24 @@ namespace Astranox
 
     void VulkanContext::createInstance()
     {
-        VkInstanceCreateInfo createInfo{};
-        createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+        VkInstanceCreateInfo createInfo{
+            .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+        };
 
         // --------------------- Application Info ---------------------
-        VkApplicationInfo appInfo{};
-        appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-        appInfo.pApplicationName = "Astranox";
-        appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-        appInfo.pEngineName = "Astranox";
-        appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-        appInfo.apiVersion = VK_API_VERSION_1_3;
+        VkApplicationInfo appInfo{
+            .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
+            .pNext = nullptr,
+            .pApplicationName = "Astranox",
+            .applicationVersion = VK_MAKE_VERSION(1, 0, 0),
+            .pEngineName = "Astranox",
+            .engineVersion = VK_MAKE_VERSION(1, 0, 0),
+            .apiVersion = VK_API_VERSION_1_3
+        };
         createInfo.pApplicationInfo = &appInfo;
 
-        // --------------------- Extensions  ---------------------
-        uint32_t glfwExtensionCount = 0;
-        const char** glfwExtensions = ::glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-        std::vector<const char*> requiredExtensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
-        if (VK_ENABLE_VALIDATION_LAYERS) {
-            requiredExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-        }
-        VulkanUtils::checkInstanceExtensionSupport(requiredExtensions);
-        createInfo.enabledExtensionCount = static_cast<uint32_t>(requiredExtensions.size());
-        createInfo.ppEnabledExtensionNames = requiredExtensions.data();
 
         // --------------------- Validation Layers ---------------------
         // [NOTE] `validationLayers.data()` should stay valid until `vkCreateInstance` is called.
@@ -105,6 +100,19 @@ namespace Astranox
             createInfo.enabledLayerCount = static_cast<uint32_t>(VulkanUtils::validationLayers.size());
             createInfo.ppEnabledLayerNames = VulkanUtils::validationLayers.data();
         }
+
+
+        // --------------------- Extensions  ---------------------
+        uint32_t glfwExtensionCount = 0;
+        const char** glfwExtensions = ::glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+        std::vector<const char*> requiredExtensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+        if (VK_ENABLE_VALIDATION_LAYERS) {
+            requiredExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+        }
+        VulkanUtils::checkInstanceExtensionSupport(requiredExtensions);
+        createInfo.enabledExtensionCount = static_cast<uint32_t>(requiredExtensions.size());
+        createInfo.ppEnabledExtensionNames = requiredExtensions.data();
+
 
         VkResult result = ::vkCreateInstance(&createInfo, nullptr, &s_Instance);
         VK_CHECK(result);
@@ -119,16 +127,19 @@ namespace Astranox
         AST_CORE_ASSERT(vkCreateDebugUtilsMessengerEXT, "Failed to load vkCreateDebugUtilsMessengerEXT");
 
 
-        VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
-        debugCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-        debugCreateInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT
-                                        | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT
-                                        | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-        debugCreateInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT
-                                    | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT
-                                    | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-        debugCreateInfo.pfnUserCallback = debugCallback;
-
+        VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{
+            .sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
+            .pNext = nullptr,
+            .flags = 0,
+            .messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT
+                            | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT
+                            | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT,
+            .messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT
+                            | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT
+                            | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT,
+            .pfnUserCallback = debugCallback,
+            .pUserData = nullptr
+        };
         VkResult result = vkCreateDebugUtilsMessengerEXT(s_Instance, &debugCreateInfo, nullptr, &m_DebugMessenger);
         VK_CHECK(result);
     }

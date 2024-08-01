@@ -17,7 +17,6 @@
 #include <unordered_set>
 
 #include <glm/glm.hpp>
-#include <spdlog/spdlog.h>
 
 #include <Astranox/core/Base.hpp>
 #include <Astranox/core/RefCounted.hpp>
