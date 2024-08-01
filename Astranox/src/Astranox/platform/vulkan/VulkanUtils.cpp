@@ -13,13 +13,13 @@ namespace Astranox
             std::vector<VkLayerProperties> supportedLayers(supportedLayerCount);
             ::vkEnumerateInstanceLayerProperties(&supportedLayerCount, supportedLayers.data());
 
-            AW_CORE_DEBUG("Found {0} supported validation layers.", supportedLayerCount);
+            AST_CORE_DEBUG("Found {0} supported validation layers.", supportedLayerCount);
             //for (size_t i = 0; i < supportedLayerCount; i++) {
-            //    AW_CORE_DEBUG("  {0}: {1}", i + 1, supportedLayers[i].layerName);
+            //    AST_CORE_DEBUG("  {0}: {1}", i + 1, supportedLayers[i].layerName);
             //}
-            AW_CORE_DEBUG("Required {0} validation layers:", VulkanUtils::validationLayers.size());
+            AST_CORE_DEBUG("Required {0} validation layers:", VulkanUtils::validationLayers.size());
             for (size_t i = 0; i < VulkanUtils::validationLayers.size(); i++) {
-                AW_CORE_DEBUG("  {0}: {1}", i + 1, VulkanUtils::validationLayers[i]);
+                AST_CORE_DEBUG("  {0}: {1}", i + 1, VulkanUtils::validationLayers[i]);
             }
 
             for (const char* layerName : VulkanUtils::validationLayers) {
@@ -33,12 +33,12 @@ namespace Astranox
                 }
 
                 if (!layerFound) {
-                    AW_CORE_ASSERT(false, "Validation layer {0} requested, but not available!", layerName);
+                    AST_CORE_ASSERT(false, "Validation layer {0} requested, but not available!", layerName);
                     return;
                 }
             }
 
-            AW_CORE_DEBUG("All required validation layers are available.");
+            AST_CORE_DEBUG("All required validation layers are available.");
         }
 
         void checkInstanceExtensionSupport(const std::vector<const char*>& requiredExtensions)
@@ -49,13 +49,13 @@ namespace Astranox
             std::vector<VkExtensionProperties> availableExtensions(extensionCount);
             ::vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, availableExtensions.data());
 
-            AW_CORE_DEBUG("Found {0} available instance extensions.", extensionCount);
+            AST_CORE_DEBUG("Found {0} available instance extensions.", extensionCount);
             //for (size_t i = 0; i < extensionCount; i++) {
-            //    AW_CORE_DEBUG("  {0}: {1}", i + 1, availableExtensions[i].extensionName);
+            //    AST_CORE_DEBUG("  {0}: {1}", i + 1, availableExtensions[i].extensionName);
             //}
-            AW_CORE_DEBUG("Required {0} instance extensions:", requiredExtensions.size());
+            AST_CORE_DEBUG("Required {0} instance extensions:", requiredExtensions.size());
             for (size_t i = 0; i < requiredExtensions.size(); i++) {
-                AW_CORE_DEBUG("  {0}: {1}", i + 1, requiredExtensions[i]);
+                AST_CORE_DEBUG("  {0}: {1}", i + 1, requiredExtensions[i]);
             }
 
             for (const char* extensionName : requiredExtensions) {
@@ -69,19 +69,19 @@ namespace Astranox
                 }
 
                 if (!extensionFound) {
-                    AW_CORE_ASSERT(false, "Extension {0} requested, but not available!", extensionName);
+                    AST_CORE_ASSERT(false, "Extension {0} requested, but not available!", extensionName);
                     return;
                 }
             }
 
-            AW_CORE_DEBUG("All required extensions are available.");
+            AST_CORE_DEBUG("All required extensions are available.");
         }
 
         void checkDeviceExtensionSupport(Ref<VulkanPhysicalDevice> physicalDevice)
         {
             for (const char* extensionName : VulkanUtils::deviceExtensions)
             {
-                AW_CORE_ASSERT(
+                AST_CORE_ASSERT(
                     physicalDevice->isExtentionSupported(extensionName),
                     "Physical device does not support {0}!", extensionName
                 );
@@ -122,7 +122,7 @@ namespace Astranox
 
         void checkResult(VkResult result)
         {
-            AW_CORE_ASSERT(result == VK_SUCCESS, "Vulkan error: {0}", vkResultToString(result));
+            AST_CORE_ASSERT(result == VK_SUCCESS, "Vulkan error: {0}", vkResultToString(result));
         }
 
 

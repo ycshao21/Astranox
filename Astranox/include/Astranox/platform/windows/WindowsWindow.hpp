@@ -35,6 +35,10 @@ namespace Astranox
 
         Ref<GraphicsContext> getGraphicsContext() const { return m_Context; }
 
+    private:
+        void pollEvents() override;
+        void swapBuffers() override;
+
     private: // Input
         virtual MouseButtonState getMouseButtonState(MouseButton button) override;
         virtual KeyState getKeyState(Key key) override;

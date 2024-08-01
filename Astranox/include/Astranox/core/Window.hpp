@@ -32,6 +32,10 @@ namespace Astranox
     public:
         virtual void onUpdate() = 0;
 
+    private:
+        virtual void pollEvents() = 0;
+        virtual void swapBuffers() = 0;
+
     public:
         virtual void* getHandle() = 0;
 

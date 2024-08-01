@@ -2,13 +2,13 @@
 #include "Astranox/core/Base.hpp"
 #include "Astranox/platform/vulkan/VulkanPhysicalDevice.hpp"
 
-#ifdef AW_ENABLE_ASSERTS
+#ifdef AST_ENABLE_ASSERTS
     #define VK_CHECK(x) Astranox::VulkanUtils::checkResult(x)
 #else
     #define VK_CHECK(x)
 #endif
 
-#ifdef AW_CONFIG_DEBUG
+#ifdef AST_CONFIG_DEBUG
     #define VK_ENABLE_VALIDATION_LAYERS 1
 #else
     #define VK_ENABLE_VALIDATION_LAYERS 0

@@ -54,7 +54,7 @@ namespace Astranox
         EventDispatcher dispatcher(evnt);
         dispatcher.dispatch<WindowCloseEvent>([this](WindowCloseEvent& e) { return onWindowClose(e); });
 
-        //AW_CORE_TRACE("{0}", evnt);
+        //AST_CORE_TRACE("{0}", evnt);
 
         // Propagate the event to all layers
         for (auto it = m_LayerStack.rbegin(); it != m_LayerStack.rend(); ++it)

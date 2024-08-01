@@ -60,7 +60,7 @@ namespace Astranox
         // Choose present mode >>>
         uint32_t presentModeCount = 0;
         ::vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice->getRaw(), m_Surface, &presentModeCount, nullptr);
-        AW_CORE_ASSERT(presentModeCount != 0, "Failed to get present modes");
+        AST_CORE_ASSERT(presentModeCount != 0, "Failed to get present modes");
 
         std::vector<VkPresentModeKHR> presentModes(presentModeCount);
         ::vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice->getRaw(), m_Surface, &presentModeCount, presentModes.data());
@@ -133,7 +133,7 @@ namespace Astranox
 
         uint32_t formatCount = 0;
         ::vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice->getRaw(), m_Surface, &formatCount, nullptr);
-        AW_CORE_ASSERT(formatCount != 0, "Failed to get surface formats");
+        AST_CORE_ASSERT(formatCount != 0, "Failed to get surface formats");
 
         std::vector<VkSurfaceFormatKHR> surfaceFormats(formatCount);
         ::vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice->getRaw(), m_Surface, &formatCount, surfaceFormats.data());
@@ -177,8 +177,8 @@ namespace Astranox
                 break;
             }
         }
-        AW_CORE_ASSERT(graphicsFamily.has_value(), "Failed to find graphics queue family");
-        AW_CORE_ASSERT(presentFamily.has_value(), "Failed to find present queue family");
+        AST_CORE_ASSERT(graphicsFamily.has_value(), "Failed to find graphics queue family");
+        AST_CORE_ASSERT(presentFamily.has_value(), "Failed to find present queue family");
 
         m_GraphicsQueueIndex = graphicsFamily.value();
         m_PresentQueueIndex = presentFamily.value();
@@ -188,7 +188,7 @@ namespace Astranox
     {
         uint32_t imageCount = 0;
         ::vkGetSwapchainImagesKHR(m_Device->getRaw(), m_Swapchain, &imageCount, nullptr);
-        AW_CORE_ASSERT(imageCount != 0, "Failed to get swapchain images");
+        AST_CORE_ASSERT(imageCount != 0, "Failed to get swapchain images");
 
         std::vector<VkImage> images(imageCount);
         ::vkGetSwapchainImagesKHR(m_Device->getRaw(), m_Swapchain, &imageCount, images.data());

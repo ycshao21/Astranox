@@ -29,6 +29,6 @@
 #include <Astranox/core/events/MouseEvent.hpp>
 
 
-#ifdef AW_PLATFORM_WINDOWS
+#ifdef AST_PLATFORM_WINDOWS
     #include <Windows.h>
 #endif

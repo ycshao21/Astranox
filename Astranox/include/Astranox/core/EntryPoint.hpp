@@ -7,7 +7,7 @@
  */
 
 
-#ifdef AW_PLATFORM_WINDOWS
+#ifdef AST_PLATFORM_WINDOWS
 
     extern Astranox::Application* Astranox::createApplication();
 

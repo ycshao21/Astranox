@@ -20,16 +20,16 @@ namespace Astranox
         if (!s_GLFWInitialized)
         {
             // Initialize GLFW
-            // [NOTE] glfwInit() cannot be called directly in AW_CORE_ASSERT,
+            // [NOTE] glfwInit() cannot be called directly in AST_CORE_ASSERT,
             // because the window may not be created in Release mode.
             // To avoid this, we use a local variable to store the return value.
             int success = ::glfwInit();
-            AW_CORE_ASSERT(success, "Could not initialize GLFW!");
+            AST_CORE_ASSERT(success, "Could not initialize GLFW!");
 
             ::glfwSetErrorCallback(
                 [](int error, const char* description)
                 {
-                    AW_CORE_ERROR("GLFW error ({0}): {1}", error, description);
+                    AST_CORE_ERROR("GLFW error ({0}): {1}", error, description);
                 }
             );
 
@@ -38,10 +38,12 @@ namespace Astranox
 
         ::glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);  // We use Vulkan, so disable OpenGL API
         ::glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);  // Resizing is not supported yet
-        ::glfwMakeContextCurrent(m_Handle);
 
         m_Handle = ::glfwCreateWindow(m_Data.width, m_Data.height, m_Data.title.c_str(), nullptr, nullptr);
-        AW_CORE_INFO("Created window {0} ({1}, {2})", m_Data.title, m_Data.width, m_Data.height);
+        AST_CORE_ASSERT(m_Handle, "Window creation failed!");
+        AST_CORE_INFO("Window created: {0} ({1}, {2})", m_Data.title, m_Data.width, m_Data.height);
+
+        ::glfwMakeContextCurrent(m_Handle);
 
         m_Context = GraphicsContext::create();
         m_Context->init();
@@ -151,15 +153,24 @@ namespace Astranox
 
     void WindowsWindow::onUpdate()
     {
-        ::glfwPollEvents();
-
-        m_Context->swapBuffers();
+        pollEvents();
+        swapBuffers();
     }
 
     void WindowsWindow::setVSync(bool enable)
     {
         ::glfwSwapInterval(enable ? 1 : 0);  // [NOTE] 0: disable, 1: enable (vsync)
         m_Data.vsync = enable;
+    }
+
+    void WindowsWindow::pollEvents()
+    {
+        ::glfwPollEvents();
+    }
+
+    void WindowsWindow::swapBuffers()
+    {
+        m_Context->swapBuffers();
     }
 
     MouseButtonState WindowsWindow::getMouseButtonState(MouseButton button)

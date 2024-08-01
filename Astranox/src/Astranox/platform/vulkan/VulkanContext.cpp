@@ -18,14 +18,14 @@ namespace Astranox
         const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
         void* pUserData
     ) {
-        AW_CORE_ERROR("Vulkan validation layer: {0}", pCallbackData->pMessage);
+        AST_CORE_ERROR("Vulkan validation layer: {0}", pCallbackData->pMessage);
         return VK_FALSE;
     }
 
     void VulkanContext::init()
     {
         s_Context = this;
-        AW_CORE_INFO("Creating Vulkan context...");
+        AST_CORE_INFO("Creating Vulkan context...");
 
         createInstance();
 
@@ -54,7 +54,7 @@ namespace Astranox
         {
             // Destroy the debug messenger
             auto vkDestroyDebugUtilsMessengerEXT = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(s_Instance, "vkDestroyDebugUtilsMessengerEXT");
-            AW_CORE_ASSERT(vkDestroyDebugUtilsMessengerEXT, "Failed to load vkDestroyDebugUtilsMessengerEXT");
+            AST_CORE_ASSERT(vkDestroyDebugUtilsMessengerEXT, "Failed to load vkDestroyDebugUtilsMessengerEXT");
             vkDestroyDebugUtilsMessengerEXT(s_Instance, m_DebugMessenger, nullptr);
         }
 
@@ -100,7 +100,7 @@ namespace Astranox
         // So, we define it here just to keep it valid.
 
         if (VK_ENABLE_VALIDATION_LAYERS) {
-            AW_CORE_DEBUG("Validation layers are enabled.");
+            AST_CORE_DEBUG("Validation layers are enabled.");
             VulkanUtils::checkValidationLayerSupport();
             createInfo.enabledLayerCount = static_cast<uint32_t>(VulkanUtils::validationLayers.size());
             createInfo.ppEnabledLayerNames = VulkanUtils::validationLayers.data();
@@ -112,11 +112,11 @@ namespace Astranox
 
     void VulkanContext::setupDebugMessenger()
     {
-        AW_CORE_DEBUG("Setting up Vulkan debug messenger...");
+        AST_CORE_DEBUG("Setting up Vulkan debug messenger...");
 
         // Get function pointer
         auto vkCreateDebugUtilsMessengerEXT = (PFN_vkCreateDebugUtilsMessengerEXT)::vkGetInstanceProcAddr(s_Instance, "vkCreateDebugUtilsMessengerEXT");
-        AW_CORE_ASSERT(vkCreateDebugUtilsMessengerEXT, "Failed to load vkCreateDebugUtilsMessengerEXT");
+        AST_CORE_ASSERT(vkCreateDebugUtilsMessengerEXT, "Failed to load vkCreateDebugUtilsMessengerEXT");
 
 
         VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};

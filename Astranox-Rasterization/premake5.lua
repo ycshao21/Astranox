@@ -22,19 +22,19 @@ project "Astranox-Rasterization"
 	filter "system:windows"
 		systemversion "latest"
 		defines {
-            "AW_PLATFORM_WINDOWS"
+            "AST_PLATFORM_WINDOWS"
         }
 
 	filter "configurations:Debug"
 		symbols "On"
 		defines {
-            "AW_CONFIG_DEBUG",
+            "AST_CONFIG_DEBUG",
         }
 		processDependencies("Debug")
 
 	filter "configurations:Release"
 		optimize "On"
 		defines {
-			"AW_CONFIG_RELEASE"
+			"AST_CONFIG_RELEASE"
 		}
 		processDependencies("Release")

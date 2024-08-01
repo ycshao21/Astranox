@@ -10,8 +10,8 @@ namespace Astranox
 
         uint32_t physicalDeviceCount = 0;
         ::vkEnumeratePhysicalDevices(vkInstance, &physicalDeviceCount, nullptr);
-        AW_CORE_ASSERT(physicalDeviceCount != 0, "Failed to find GPUs with Vulkan support!");
-        AW_CORE_DEBUG("Found {0} GPUs with Vulkan support.", physicalDeviceCount);
+        AST_CORE_ASSERT(physicalDeviceCount != 0, "Failed to find GPUs with Vulkan support!");
+        AST_CORE_DEBUG("Found {0} GPUs with Vulkan support.", physicalDeviceCount);
 
         std::vector<VkPhysicalDevice> physicalDevices(physicalDeviceCount);
         ::vkEnumeratePhysicalDevices(vkInstance, &physicalDeviceCount, physicalDevices.data());
@@ -33,7 +33,7 @@ namespace Astranox
 
         if (m_PhysicalDevice == VK_NULL_HANDLE)
         {
-            AW_CORE_ERROR("Failed to find a suitable GPU! Falling back to the first one.");
+            AST_CORE_ERROR("Failed to find a suitable GPU! Falling back to the first one.");
 
             m_PhysicalDevice = physicalDevices[0];
 
@@ -41,13 +41,13 @@ namespace Astranox
             vkGetPhysicalDeviceFeatures(m_PhysicalDevice, &m_Features);
             vkGetPhysicalDeviceMemoryProperties(m_PhysicalDevice, &m_MemoryProperties);
         }
-        AW_CORE_TRACE("Selected GPU: {0}", m_Properties.deviceName);
+        AST_CORE_TRACE("Selected GPU: {0}", m_Properties.deviceName);
         // <<< Find a suitable GPU
 
         // Get queue family properties >>>
         uint32_t queueFamilyCount = 0;
         ::vkGetPhysicalDeviceQueueFamilyProperties(m_PhysicalDevice, &queueFamilyCount, nullptr);
-        AW_CORE_ASSERT(queueFamilyCount != 0, "Failed to find queue families!");
+        AST_CORE_ASSERT(queueFamilyCount != 0, "Failed to find queue families!");
         m_QueueFamilyProperties.resize(queueFamilyCount);
         ::vkGetPhysicalDeviceQueueFamilyProperties(m_PhysicalDevice, &queueFamilyCount, m_QueueFamilyProperties.data());
         // <<< Get queue family properties
@@ -59,10 +59,10 @@ namespace Astranox
         {
             std::vector<VkExtensionProperties> extensions(extensionCount);
             ::vkEnumerateDeviceExtensionProperties(m_PhysicalDevice, nullptr, &extensionCount, extensions.data());
-            AW_CORE_DEBUG("Found {0} supported extensions for the GPU.", extensionCount);
+            AST_CORE_DEBUG("Found {0} supported extensions for the GPU.", extensionCount);
             for (size_t i = 0; i < extensionCount; i++)
             {
-                //AW_CORE_DEBUG("  {0}: {1}", i + 1, extensions[i].extensionName);
+                //AST_CORE_DEBUG("  {0}: {1}", i + 1, extensions[i].extensionName);
                 m_SupportedExtensions.emplace(extensions[i].extensionName);
             }
         }
@@ -71,7 +71,7 @@ namespace Astranox
         // Get supported layers >>>
         uint32_t layerCount = 0;
         ::vkEnumerateDeviceLayerProperties(m_PhysicalDevice, &layerCount, nullptr);
-        AW_CORE_ASSERT(layerCount != 0, "Failed to find device layers!");
+        AST_CORE_ASSERT(layerCount != 0, "Failed to find device layers!");
         m_LayerProperties.resize(layerCount);
         ::vkEnumerateDeviceLayerProperties(m_PhysicalDevice, &layerCount, m_LayerProperties.data());
         // <<< Get supported layers
@@ -132,7 +132,7 @@ namespace Astranox
                 return;
             }
         }
-        AW_CORE_ASSERT(false, "Failed to find queue families!");
+        AST_CORE_ASSERT(false, "Failed to find queue families!");
     }
 
     Ref<VulkanPhysicalDevice> VulkanPhysicalDevice::pick()
