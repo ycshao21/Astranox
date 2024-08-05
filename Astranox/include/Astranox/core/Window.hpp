@@ -30,9 +30,8 @@ namespace Astranox
         virtual void destroy() = 0;
 
     public:
-        virtual void onUpdate() = 0;
+        virtual void onResize(uint32_t width, uint32_t height) = 0;
 
-    private:
         virtual void pollEvents() = 0;
         virtual void swapBuffers() = 0;
 

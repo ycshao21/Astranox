@@ -43,11 +43,15 @@ namespace Astranox
 
     private: // Event handling
         virtual bool onWindowClose(WindowCloseEvent& e) final;
+        virtual bool onWindowResize(WindowResizeEvent& e) final;
 
     private:
         inline static Application* s_Instance = nullptr;
         bool m_Running = true;
+
         std::unique_ptr<Window> m_Window = nullptr;
+        bool m_Minimized = false;
+
         LayerStack m_LayerStack;
 
         // TEMP

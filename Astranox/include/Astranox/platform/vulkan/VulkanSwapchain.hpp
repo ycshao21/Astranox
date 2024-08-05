@@ -17,11 +17,13 @@ namespace Astranox
         virtual ~VulkanSwapchain() = default;
 
         void createSurface();
-        void createSwapchain();
+        void createSwapchain(uint32_t width, uint32_t height);
 
         void destroy();
 
     public:
+        void resize(uint32_t width, uint32_t height);
+
         void drawFrame();
 
         void beginFrame() const;
@@ -39,16 +41,13 @@ namespace Astranox
         void getQueueIndices();
         void getSwapchainImages();
 
-        void acquireNextImage();
-
         VkFramebuffer getCurrentFramebuffer() { return m_Framebuffers[m_CurrentImageIndex]; }
         VkCommandBuffer getCurrentCommandBuffer() { return m_CommandBuffers[m_CurrentFramebufferIndex]; }
 
         void createRenderPass();
         void createFramebuffers();
-        void createCommandBuffers();
         void createSyncObjects();
-
+        
     private:
         Ref<VulkanDevice> m_Device = nullptr;
 

@@ -122,7 +122,7 @@ namespace Astranox
 
         void checkResult(VkResult result)
         {
-            AST_CORE_ASSERT(result == VK_SUCCESS, "Vulkan error: {0}", vkResultToString(result));
+            AST_CORE_ASSERT(result == VK_SUCCESS, std::format("Vulkan error: {0}", vkResultToString(result)));
         }
 
         std::string vkPhysicalDeviceTypeToString(VkPhysicalDeviceType type)

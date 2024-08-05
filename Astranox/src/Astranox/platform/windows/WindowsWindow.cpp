@@ -1,5 +1,7 @@
 #include "pch.hpp"
 #include "Astranox/platform/windows/WindowsWindow.hpp"
+#include "Astranox/platform/vulkan/VulkanContext.hpp"
+#include "Astranox/platform/vulkan/VulkanSwapchain.hpp"
 
 #include <GLFW/glfw3.h>
 
@@ -37,14 +39,14 @@ namespace Astranox
         }
 
         ::glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);  // We use Vulkan, so disable OpenGL API
-        ::glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);  // Resizing is not supported yet
+        //::glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);  // Resizing is not supported yet
 
         m_Handle = ::glfwCreateWindow(m_Data.width, m_Data.height, m_Data.title.c_str(), nullptr, nullptr);
         AST_CORE_ASSERT(m_Handle, "Window creation failed!");
         AST_CORE_INFO("Window created: {0} ({1}, {2})", m_Data.title, m_Data.width, m_Data.height);
 
         m_Context = GraphicsContext::create();
-        m_Context->init();
+        m_Context->init(m_Data.width, m_Data.height);
 
         //::glfwMakeContextCurrent(m_Window);
         ::glfwSetWindowUserPointer(m_Handle, &m_Data);
@@ -149,10 +151,12 @@ namespace Astranox
         }
     }
 
-    void WindowsWindow::onUpdate()
+    void WindowsWindow::onResize(uint32_t width, uint32_t height)
     {
-        pollEvents();
-        swapBuffers();
+        // I don't like it...
+        auto swapchain = m_Context.as<VulkanContext>()->getSwapchain();
+
+        swapchain->resize(width, height);
     }
 
     void WindowsWindow::setVSync(bool enable)

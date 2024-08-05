@@ -29,7 +29,7 @@ namespace Astranox
         chooseSurfaceFormat();
     }
 
-    void VulkanSwapchain::createSwapchain()
+    void VulkanSwapchain::createSwapchain(uint32_t width, uint32_t height)
     {
         auto physicalDevice = m_Device->getPhysicalDevice();
 
@@ -39,21 +39,25 @@ namespace Astranox
         VK_CHECK(result);
 
         if (surfaceCapabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
+            // [NOTE] If the surface size is defined, we use it.
             m_SwapchainExtent = surfaceCapabilities.currentExtent;
         } else {
-            int width, height;
+            // [NOTE] Otherwise, we set the size to the window size.
 
             // [TODO] This should not be platform specific, but for now, we call GLFW function.
             GLFWwindow* windowHandle = static_cast<GLFWwindow*>(Application::get().getWindow().getHandle());
-            ::glfwGetFramebufferSize(windowHandle, &width, &height);
+            ::glfwGetFramebufferSize(windowHandle, (int*)&width, (int*)&height);
 
             m_SwapchainExtent.width = std::clamp(static_cast<uint32_t>(width), surfaceCapabilities.minImageExtent.width, surfaceCapabilities.maxImageExtent.width);
             m_SwapchainExtent.height = std::clamp(static_cast<uint32_t>(height), surfaceCapabilities.minImageExtent.height, surfaceCapabilities.maxImageExtent.height);
         }
 
         if (m_SwapchainExtent.width == 0 || m_SwapchainExtent.height == 0) {
+            AST_CORE_WARN("Attempting to create a swapchain with width or height of 0. Skipping...");
             return;
         }
+
+        AST_CORE_TRACE("Swapchain size: {0}x{1}", m_SwapchainExtent.width, m_SwapchainExtent.height);
         // <<< Choose extent
 
 
@@ -80,12 +84,8 @@ namespace Astranox
             desiredImageCount = surfaceCapabilities.maxImageCount;
         }
 
-        VkSwapchainKHR oldSwapchain = m_Swapchain;
-
         VkSwapchainCreateInfoKHR createInfo{
             .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
-            .pNext = nullptr,
-            .flags = 0,
             .surface = m_Surface,
             .minImageCount = desiredImageCount,
             .imageFormat = m_ImageFormat,
@@ -97,7 +97,7 @@ namespace Astranox
             .compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
             .presentMode = presentMode,
             .clipped = VK_TRUE,
-            .oldSwapchain = oldSwapchain
+            .oldSwapchain = VK_NULL_HANDLE
         };
 
         std::vector<uint32_t> queueFamilyIndices = { m_GraphicsQueueIndex, m_PresentQueueIndex };
@@ -111,16 +111,42 @@ namespace Astranox
             createInfo.pQueueFamilyIndices = queueFamilyIndices.data();
         }
 
+        if (m_Swapchain != VK_NULL_HANDLE) {
+            ::vkDestroySwapchainKHR(m_Device->getRaw(), m_Swapchain, nullptr);
+        }
+
         result = ::vkCreateSwapchainKHR(m_Device->getRaw(), &createInfo, nullptr, &m_Swapchain);
         VK_CHECK(result);
 
+        // Destroy old image views
+        for (auto& image : m_Images)
+        {
+            ::vkDestroyImageView(m_Device->getRaw(), image.imageView, nullptr);
+        }
         getSwapchainImages();
 
-        createRenderPass();
-        createFramebuffers();
-        createCommandBuffers();
+        if (!m_RenderPass)
+        {
+            createRenderPass();
+        }
 
-        createSyncObjects();
+        for (auto framebuffer : m_Framebuffers)
+        {
+            ::vkDestroyFramebuffer(m_Device->getRaw(), framebuffer, nullptr);
+        }
+        createFramebuffers();
+
+        if (!m_CommandPool)
+        {
+            m_CommandPool = Ref<VulkanCommandPool>::create();
+        }
+
+        m_CommandBuffers = m_CommandPool->allocateCommandBuffers(m_MaxFramesInFlight);
+
+        if (m_InFlightFences.empty())
+        {
+            createSyncObjects();
+        }
 
         // Remove these
 
@@ -149,13 +175,11 @@ namespace Astranox
         m_Pipeline = nullptr;
         m_Shader = nullptr;
 
+        // Destroy old swapchain
         for (auto framebuffer : m_Framebuffers)
         {
             ::vkDestroyFramebuffer(m_Device->getRaw(), framebuffer, nullptr);
         }
-        m_Framebuffers.clear();
-
-        ::vkDestroyRenderPass(m_Device->getRaw(), m_RenderPass, nullptr);
 
         for (auto& image : m_Images)
         {
@@ -164,8 +188,16 @@ namespace Astranox
 
         ::vkDestroySwapchainKHR(m_Device->getRaw(), m_Swapchain, nullptr);
 
+        ::vkDestroyRenderPass(m_Device->getRaw(), m_RenderPass, nullptr);
+
         VkInstance instance = VulkanContext::getInstance();
         ::vkDestroySurfaceKHR(instance, m_Surface, nullptr);
+    }
+
+    void VulkanSwapchain::resize(uint32_t width, uint32_t height)
+    {
+        m_Device->waitIdle();
+        createSwapchain(width, height);
     }
 
     void VulkanSwapchain::drawFrame()
@@ -173,7 +205,23 @@ namespace Astranox
         ::vkWaitForFences(m_Device->getRaw(), 1, &m_InFlightFences[m_CurrentFramebufferIndex], VK_TRUE, std::numeric_limits<uint64_t>::max());
         ::vkResetFences(m_Device->getRaw(), 1, &m_InFlightFences[m_CurrentFramebufferIndex]);
 
-        acquireNextImage();
+        // Acquire next image >>>
+        VkResult result = ::vkAcquireNextImageKHR(
+            m_Device->getRaw(),
+            m_Swapchain,
+            std::numeric_limits<uint64_t>::max(),
+            m_ImageAvailableSemaphores[m_CurrentFramebufferIndex],
+            VK_NULL_HANDLE,
+            &m_CurrentImageIndex
+        );
+
+        if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+            this->resize(m_SwapchainExtent.width, m_SwapchainExtent.height);
+        } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+            VK_CHECK(result);
+        }
+        // <<< Acquire next image
+
         vkResetCommandBuffer(getCurrentCommandBuffer(), 0);
 
         // Begin command buffer >>>
@@ -182,7 +230,7 @@ namespace Astranox
             .flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT,
             .pInheritanceInfo = nullptr
         };
-        VkResult result = ::vkBeginCommandBuffer(getCurrentCommandBuffer(), &beginInfo);
+        result = ::vkBeginCommandBuffer(getCurrentCommandBuffer(), &beginInfo);
         VK_CHECK(result);
         // <<< Begin command buffer
 
@@ -266,6 +314,12 @@ namespace Astranox
         result = ::vkQueuePresentKHR(m_Device->getGraphicsQueue(), &presentInfo);
         VK_CHECK(result);
 
+        if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+            this->resize(m_SwapchainExtent.width, m_SwapchainExtent.height);
+        } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+            VK_CHECK(result);
+        }
+
         m_CurrentFramebufferIndex = (m_CurrentFramebufferIndex + 1) % m_MaxFramesInFlight;
     }
 
@@ -289,19 +343,6 @@ namespace Astranox
 
         //VkResult result = ::vkQueuePresentKHR(m_Device->getGraphicsQueue(), &presentInfo);
         //VK_CHECK(result);
-    }
-
-    void VulkanSwapchain::acquireNextImage()
-    {
-        VkResult result = ::vkAcquireNextImageKHR(
-            m_Device->getRaw(),
-            m_Swapchain,
-            std::numeric_limits<uint64_t>::max(),
-            m_ImageAvailableSemaphores[m_CurrentFramebufferIndex],
-            VK_NULL_HANDLE,
-            &m_CurrentImageIndex
-        );
-        VK_CHECK(result);
     }
 
     void VulkanSwapchain::chooseSurfaceFormat()
@@ -374,24 +415,30 @@ namespace Astranox
 
         // Create image views >>>
         m_Images.resize(imageCount);
+
+        VkImageViewCreateInfo createInfo{
+            .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+            .viewType = VK_IMAGE_VIEW_TYPE_2D,
+            .format = m_ImageFormat,
+            .components = {
+                .r = VK_COMPONENT_SWIZZLE_IDENTITY,
+                .g = VK_COMPONENT_SWIZZLE_IDENTITY,
+                .b = VK_COMPONENT_SWIZZLE_IDENTITY,
+                .a = VK_COMPONENT_SWIZZLE_IDENTITY
+            },
+            .subresourceRange = {
+                .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                .baseMipLevel = 0,
+                .levelCount = 1,
+                .baseArrayLayer = 0,
+                .layerCount = 1
+            }
+        };
+
         for (size_t i = 0; i < m_Images.size(); i++)
         {
             m_Images[i].image = images[i];
-
-            VkImageViewCreateInfo createInfo{};
-            createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
             createInfo.image = images[i];
-            createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-            createInfo.format = m_ImageFormat;
-            createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-            createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-            createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-            createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-            createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-            createInfo.subresourceRange.baseMipLevel = 0;
-            createInfo.subresourceRange.levelCount = 1;
-            createInfo.subresourceRange.baseArrayLayer = 0;
-            createInfo.subresourceRange.layerCount = 1;
 
             VkResult result = ::vkCreateImageView(m_Device->getRaw(), &createInfo, nullptr, &m_Images[i].imageView);
             VK_CHECK(result);
@@ -481,13 +528,6 @@ namespace Astranox
             );
             VK_CHECK(result);
         }
-    }
-
-    void VulkanSwapchain::createCommandBuffers()
-    {
-        m_CommandPool = Ref<VulkanCommandPool>::create();
-
-        m_CommandBuffers = m_CommandPool->allocateCommandBuffers(m_MaxFramesInFlight);
     }
 
     void VulkanSwapchain::createSyncObjects()

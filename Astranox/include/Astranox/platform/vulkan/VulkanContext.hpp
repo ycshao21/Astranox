@@ -15,7 +15,7 @@ namespace Astranox
         VulkanContext() = default;
         virtual ~VulkanContext() = default;
 
-        void init() override;
+        void init(uint32_t& width, uint32_t& height) override;
         void destroy() override;
 
     public:

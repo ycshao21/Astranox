@@ -1,6 +1,5 @@
 #include "pch.hpp"
 #include "Astranox/core/Application.hpp"
-//#include "Astranox/rendering/Renderer.hpp"
 
 namespace Astranox
 {
@@ -44,14 +43,19 @@ namespace Astranox
     {
         while (m_Running)
         {
-            // Update all layers
-            for (Layer* layer : m_LayerStack)
-            {
-                layer->onUpdate();
-            }
+            m_Window->pollEvents();
 
-            // Update the window
-            m_Window->onUpdate();
+            if (!m_Minimized)
+            {
+                // Update all layers
+                for (Layer* layer : m_LayerStack)
+                {
+                    layer->onUpdate();
+                }
+
+                // Update the window
+                m_Window->swapBuffers();
+            }
         }
     }
 
@@ -59,8 +63,7 @@ namespace Astranox
     {
         EventDispatcher dispatcher(evnt);
         dispatcher.dispatch<WindowCloseEvent>([this](WindowCloseEvent& e) { return onWindowClose(e); });
-
-        //AST_CORE_TRACE("{0}", evnt);
+        dispatcher.dispatch<WindowResizeEvent>([this](WindowResizeEvent& e) { return onWindowResize(e); });
 
         // Propagate the event to all layers
         for (auto it = m_LayerStack.rbegin(); it != m_LayerStack.rend(); ++it)
@@ -87,5 +90,20 @@ namespace Astranox
     {
         m_Running = false;
         return true;
+    }
+
+    bool Application::onWindowResize(WindowResizeEvent& e)
+    {
+        if (e.getWidth() == 0 || e.getHeight() == 0)
+        {
+            AST_CORE_WARN("Window minimized.");
+            m_Minimized = true;
+            return false;
+        }
+
+        m_Minimized = false;
+        m_Window->onResize(e.getWidth(), e.getHeight());
+
+        return false;
     }
 }

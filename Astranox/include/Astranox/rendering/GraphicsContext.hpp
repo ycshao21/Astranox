@@ -9,7 +9,7 @@ namespace Astranox
         static Ref<GraphicsContext> create();
         virtual ~GraphicsContext() = default;
 
-        virtual void init() = 0;
+        virtual void init(uint32_t& width, uint32_t& height) = 0;
         virtual void destroy() = 0;
 
     public:

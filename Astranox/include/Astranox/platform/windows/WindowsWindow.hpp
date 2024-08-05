@@ -18,7 +18,10 @@ namespace Astranox
         void destroy() override;
 
     public:
-        void onUpdate() override;
+        void onResize(uint32_t width, uint32_t height) override;
+
+        void pollEvents() override;
+        void swapBuffers() override;
 
         void setVSync(bool enable) override;
         bool isVSync() const override { return m_Data.vsync; }
@@ -35,10 +38,6 @@ namespace Astranox
 
         Ref<GraphicsContext> getGraphicsContext() const { return m_Context; }
 
-    private:
-        void pollEvents() override;
-        void swapBuffers() override;
-
     private: // Input
         virtual MouseButtonState getMouseButtonState(MouseButton button) override;
         virtual KeyState getKeyState(Key key) override;
@@ -53,8 +52,8 @@ namespace Astranox
         struct WindowData final
         {
             std::string title;
-            int width;
-            int height;
+            uint32_t width;
+            uint32_t height;
 
             bool vsync;
             EventCallbackFn eventCallback;

@@ -22,7 +22,7 @@ namespace Astranox
         return VK_FALSE;
     }
 
-    void VulkanContext::init()
+    void VulkanContext::init(uint32_t& width, uint32_t& height)
     {
         s_Context = this;
         AST_CORE_INFO("Creating Vulkan context...");
@@ -39,7 +39,7 @@ namespace Astranox
 
         m_Swapchain = Ref<VulkanSwapchain>::create(m_Device);
         m_Swapchain->createSurface();
-        m_Swapchain->createSwapchain();
+        m_Swapchain->createSwapchain(width, height);
     }
 
     void VulkanContext::destroy()
