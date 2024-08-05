@@ -3,6 +3,8 @@
 #include "LayerStack.hpp"
 #include "events/ApplicationEvent.hpp"
 
+#include "Astranox/platform/vulkan/VulkanRenderer.hpp"
+
 namespace Astranox
 {
 
@@ -47,6 +49,9 @@ namespace Astranox
         bool m_Running = true;
         std::unique_ptr<Window> m_Window = nullptr;
         LayerStack m_LayerStack;
+
+        // TEMP
+        Ref<VulkanRenderer> m_Renderer = nullptr;
     };
 
     /**

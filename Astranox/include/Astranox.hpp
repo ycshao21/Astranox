@@ -5,3 +5,5 @@
 #include "Astranox/core/Logging.hpp"
 
 #include "Astranox/core/EntryPoint.hpp"
+
+#include "Astranox/rendering/Renderer.hpp"

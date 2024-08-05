@@ -1,10 +1,11 @@
 #pragma once
 #include "Astranox/rendering/GraphicsContext.hpp"
-#include "Astranox/platform/vulkan/VulkanPhysicalDevice.hpp"
-#include "Astranox/platform/vulkan/VulkanDevice.hpp"
-#include "Astranox/platform/vulkan/VulkanSwapchain.hpp"
 
 #include <vulkan/vulkan.h>
+
+#include "VulkanPhysicalDevice.hpp"
+#include "VulkanDevice.hpp"
+#include "VulkanSwapchain.hpp"
 
 namespace Astranox 
 {

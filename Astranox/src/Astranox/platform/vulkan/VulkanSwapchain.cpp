@@ -118,10 +118,37 @@ namespace Astranox
 
         createRenderPass();
         createFramebuffers();
+        createCommandBuffers();
+
+        createSyncObjects();
+
+        // Remove these
+
+        std::string vertexShaderPath = "../Astranox-Rasterization/assets/shaders/vert.spv";
+        std::string fragmentShaderPath = "../Astranox-Rasterization/assets/shaders/frag.spv";
+        m_Shader = VulkanShader::create(vertexShaderPath, fragmentShaderPath);
+
+        m_Pipeline = Ref<VulkanPipeline>::create(m_Shader);
+        m_Pipeline->createPipeline();
     }
 
     void VulkanSwapchain::destroy()
     {
+        m_Device->waitIdle();
+
+        for (size_t i = 0; i < m_MaxFramesInFlight; i++)
+        {
+            ::vkDestroySemaphore(m_Device->getRaw(), m_ImageAvailableSemaphores[i], nullptr);
+            ::vkDestroySemaphore(m_Device->getRaw(), m_RenderFinishedSemaphores[i], nullptr);
+
+            ::vkDestroyFence(m_Device->getRaw(), m_InFlightFences[i], nullptr);
+        }
+
+        m_CommandPool = nullptr;
+
+        m_Pipeline = nullptr;
+        m_Shader = nullptr;
+
         for (auto framebuffer : m_Framebuffers)
         {
             ::vkDestroyFramebuffer(m_Device->getRaw(), framebuffer, nullptr);
@@ -139,6 +166,142 @@ namespace Astranox
 
         VkInstance instance = VulkanContext::getInstance();
         ::vkDestroySurfaceKHR(instance, m_Surface, nullptr);
+    }
+
+    void VulkanSwapchain::drawFrame()
+    {
+        ::vkWaitForFences(m_Device->getRaw(), 1, &m_InFlightFences[m_CurrentFramebufferIndex], VK_TRUE, std::numeric_limits<uint64_t>::max());
+        ::vkResetFences(m_Device->getRaw(), 1, &m_InFlightFences[m_CurrentFramebufferIndex]);
+
+        acquireNextImage();
+        vkResetCommandBuffer(getCurrentCommandBuffer(), 0);
+
+        // Begin command buffer >>>
+        VkCommandBufferBeginInfo beginInfo{
+            .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+            .flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT,
+            .pInheritanceInfo = nullptr
+        };
+        VkResult result = ::vkBeginCommandBuffer(getCurrentCommandBuffer(), &beginInfo);
+        VK_CHECK(result);
+        // <<< Begin command buffer
+
+        VkClearValue clearColor = { 0.0f, 0.0f, 0.0f, 1.0f };  // Black
+
+        // Begin render pass >>>
+        VkRenderPassBeginInfo renderPassInfo{
+            .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+            .pNext = nullptr,
+            .renderPass = m_RenderPass,
+            .framebuffer = getCurrentFramebuffer(),
+            .renderArea = {
+                .offset = { 0, 0 },
+                .extent = { m_SwapchainExtent }
+            },
+            .clearValueCount = 1,
+            .pClearValues = &clearColor
+        };
+        ::vkCmdBeginRenderPass(getCurrentCommandBuffer(), &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+        // <<< Begin render pass
+
+        // Bind pipeline
+        VkPipeline graphicsPipeline = m_Pipeline->getRaw();
+        ::vkCmdBindPipeline(getCurrentCommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+
+        VkViewport viewport = {
+            .x = 0.0f,
+            .y = 0.0f,
+            .width = static_cast<float>(m_SwapchainExtent.width),
+            .height = static_cast<float>(m_SwapchainExtent.height),
+            .minDepth = 0.0f,
+            .maxDepth = 1.0f,
+        };
+        vkCmdSetViewport(getCurrentCommandBuffer(), 0, 1, &viewport);
+
+        VkRect2D scissor = {
+            .offset = { 0, 0 },
+            .extent = m_SwapchainExtent
+        };
+        vkCmdSetScissor(getCurrentCommandBuffer(), 0, 1, &scissor);
+
+        // Draw call
+        vkCmdDraw(getCurrentCommandBuffer(), 3, 1, 0, 0);
+
+        // End render pass
+        ::vkCmdEndRenderPass(getCurrentCommandBuffer());
+
+        // End command buffer
+        result = ::vkEndCommandBuffer(getCurrentCommandBuffer());
+        VK_CHECK(result);
+
+
+        std::vector<VkSemaphore> waitSemaphores = { m_ImageAvailableSemaphores[m_CurrentFramebufferIndex]};
+        std::vector<VkSemaphore> signalSemaphores = { m_RenderFinishedSemaphores[m_CurrentFramebufferIndex]};
+        std::vector<VkPipelineStageFlags> waitStages = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+
+        VkSubmitInfo submitInfo{
+            .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+            .waitSemaphoreCount = static_cast<uint32_t>(waitSemaphores.size()),
+            .pWaitSemaphores = waitSemaphores.data(),
+            .pWaitDstStageMask = waitStages.data(),
+            .commandBufferCount = 1,
+            .pCommandBuffers = &m_CommandBuffers[m_CurrentFramebufferIndex],
+            .signalSemaphoreCount = static_cast<uint32_t>(signalSemaphores.size()),
+            .pSignalSemaphores = signalSemaphores.data()
+        };
+
+        result = ::vkQueueSubmit(m_Device->getGraphicsQueue(), 1, &submitInfo, m_InFlightFences[m_CurrentFramebufferIndex]);
+        VK_CHECK(result);
+
+        VkPresentInfoKHR presentInfo{
+            .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+            .pNext = nullptr,
+            .waitSemaphoreCount = static_cast<uint32_t>(signalSemaphores.size()),
+            .pWaitSemaphores = signalSemaphores.data(),
+            .swapchainCount = 1,
+            .pSwapchains = &m_Swapchain,
+            .pImageIndices = &m_CurrentImageIndex,
+            .pResults = nullptr
+        };
+        result = ::vkQueuePresentKHR(m_Device->getGraphicsQueue(), &presentInfo);
+        VK_CHECK(result);
+
+        m_CurrentFramebufferIndex = (m_CurrentFramebufferIndex + 1) % m_MaxFramesInFlight;
+    }
+
+    void VulkanSwapchain::beginFrame() const
+    {
+        //m_CurrentImageIndex = acquireNextImage();
+    }
+
+    void VulkanSwapchain::present() const
+    {
+        //VkPresentInfoKHR presentInfo{
+        //    .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+        //    .pNext = nullptr,
+        //    .waitSemaphoreCount = 0,
+        //    .pWaitSemaphores = nullptr,
+        //    .swapchainCount = 1,
+        //    .pSwapchains = &m_Swapchain,
+        //    .pImageIndices = nullptr,
+        //    .pResults = nullptr
+        //};
+
+        //VkResult result = ::vkQueuePresentKHR(m_Device->getGraphicsQueue(), &presentInfo);
+        //VK_CHECK(result);
+    }
+
+    void VulkanSwapchain::acquireNextImage()
+    {
+        VkResult result = ::vkAcquireNextImageKHR(
+            m_Device->getRaw(),
+            m_Swapchain,
+            std::numeric_limits<uint64_t>::max(),
+            m_ImageAvailableSemaphores[m_CurrentFramebufferIndex],
+            VK_NULL_HANDLE,
+            &m_CurrentImageIndex
+        );
+        VK_CHECK(result);
     }
 
     void VulkanSwapchain::chooseSurfaceFormat()
@@ -268,16 +431,23 @@ namespace Astranox
             .pPreserveAttachments = nullptr
         };
 
+        VkSubpassDependency dependency{
+            .srcSubpass = VK_SUBPASS_EXTERNAL,
+            .dstSubpass = 0,
+            .srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            .dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            .srcAccessMask = 0,
+            .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+        };
+
         VkRenderPassCreateInfo renderPassInfo{
             .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-            .pNext = nullptr,
-            .flags = 0,
             .attachmentCount = 1,
             .pAttachments = &colorAttachment,
             .subpassCount = 1,
             .pSubpasses = &subpass,
-            .dependencyCount = 0,
-            .pDependencies = nullptr
+            .dependencyCount = 1,
+            .pDependencies = &dependency
         };
 
         VkResult result = ::vkCreateRenderPass(m_Device->getRaw(), &renderPassInfo, nullptr, &m_RenderPass);
@@ -309,6 +479,41 @@ namespace Astranox
                 nullptr,
                 &m_Framebuffers[i]
             );
+            VK_CHECK(result);
+        }
+    }
+
+    void VulkanSwapchain::createCommandBuffers()
+    {
+        m_CommandPool = Ref<VulkanCommandPool>::create();
+
+        m_CommandBuffers = m_CommandPool->allocateCommandBuffers(m_MaxFramesInFlight);
+    }
+
+    void VulkanSwapchain::createSyncObjects()
+    {
+        m_ImageAvailableSemaphores.resize(m_MaxFramesInFlight);
+        m_RenderFinishedSemaphores.resize(m_MaxFramesInFlight);
+
+        m_InFlightFences.resize(m_MaxFramesInFlight);
+
+        VkSemaphoreCreateInfo semaphoreInfo{
+            .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+        };
+
+        VkFenceCreateInfo fenceInfo{
+            .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+            .flags = VK_FENCE_CREATE_SIGNALED_BIT
+        };
+
+        for (size_t i = 0; i < m_MaxFramesInFlight; i++)
+        {
+            VkResult result = ::vkCreateSemaphore(m_Device->getRaw(), &semaphoreInfo, nullptr, &m_ImageAvailableSemaphores[i]);
+            VK_CHECK(result);
+            result = ::vkCreateSemaphore(m_Device->getRaw(), &semaphoreInfo, nullptr, &m_RenderFinishedSemaphores[i]);
+            VK_CHECK(result);
+
+            result = ::vkCreateFence(m_Device->getRaw(), &fenceInfo, nullptr, &m_InFlightFences[i]);
             VK_CHECK(result);
         }
     }

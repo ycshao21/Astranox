@@ -67,14 +67,15 @@ namespace Astranox
         ::vkGetDeviceQueue(m_Device, queueFamilyIndices.graphicsFamily.value(), 0, &m_GraphicsQueue);
     }
 
-    VulkanDevice::~VulkanDevice()
-    {
-    }
-
     void VulkanDevice::destroy()
     {
         ::vkDestroyDevice(m_Device, nullptr);
         m_Device = VK_NULL_HANDLE;
+    }
+
+    void VulkanDevice::waitIdle() const
+    {
+        ::vkDeviceWaitIdle(m_Device);
     }
 }
 

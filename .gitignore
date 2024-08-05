@@ -9,3 +9,6 @@ obj/
 *.vcxproj
 *.vcxproj.filters
 *.vcxproj.user
+
+# Shaders
+*.spv

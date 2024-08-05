@@ -1,5 +1,6 @@
 #include "pch.hpp"
 #include "Astranox/core/Application.hpp"
+//#include "Astranox/rendering/Renderer.hpp"
 
 namespace Astranox
 {
@@ -22,10 +23,15 @@ namespace Astranox
                 onEvent(e);
             }
         );
+
+        m_Renderer = Ref<VulkanRenderer>::create();
+        m_Renderer->init();
     }
 
     Application::~Application()
     {
+        m_Renderer->shutdown();
+
         m_LayerStack.clear();
 
         m_Window->destroy();

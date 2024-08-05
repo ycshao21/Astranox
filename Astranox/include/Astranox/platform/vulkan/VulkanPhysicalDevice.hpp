@@ -2,6 +2,8 @@
 
 #include <string>
 #include <set>
+#include <optional>
+
 #include <vulkan/vulkan.h>
 
 namespace Astranox

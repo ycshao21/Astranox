@@ -19,6 +19,8 @@ project "Astranox-Rasterization"
 		"../Astranox/vendor/",
 	}
 
+	includeDependencies()
+
 	filter "system:windows"
 		systemversion "latest"
 		defines {

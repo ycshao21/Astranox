@@ -1,6 +1,6 @@
 #pragma once
 #include "Astranox/core/Base.hpp"
-#include "Astranox/platform/vulkan/VulkanPhysicalDevice.hpp"
+#include "VulkanPhysicalDevice.hpp"
 
 #ifdef AST_ENABLE_ASSERTS
     #define VK_CHECK(x) Astranox::VulkanUtils::checkResult(x)

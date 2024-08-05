@@ -43,8 +43,6 @@ namespace Astranox
         AST_CORE_ASSERT(m_Handle, "Window creation failed!");
         AST_CORE_INFO("Window created: {0} ({1}, {2})", m_Data.title, m_Data.width, m_Data.height);
 
-        ::glfwMakeContextCurrent(m_Handle);
-
         m_Context = GraphicsContext::create();
         m_Context->init();
 

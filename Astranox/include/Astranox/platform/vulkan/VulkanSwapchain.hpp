@@ -1,7 +1,12 @@
 #pragma once
-#include <vector>
 #include "Astranox/core/RefCounted.hpp"
+
 #include "VulkanDevice.hpp"
+#include "VulkanCommandBuffer.hpp"
+#include "VulkanShader.hpp"
+#include "VulkanPipeline.hpp"
+
+#include <vector>
 
 namespace Astranox
 {
@@ -17,8 +22,16 @@ namespace Astranox
         void destroy();
 
     public:
-        VkRenderPass getVkRenderPass() const { return m_RenderPass; }
-        VkExtent2D getSwapchainExtent() const { return m_SwapchainExtent; }
+        void drawFrame();
+
+        void beginFrame() const;
+        void present() const;
+
+    public:
+        uint32_t getWidth() const { return m_SwapchainExtent.width; }
+        uint32_t getHeight() const { return m_SwapchainExtent.height; }
+
+        VkRenderPass getVkRenderPass() { return m_RenderPass; }
 
     private:
         void chooseSurfaceFormat();
@@ -26,12 +39,15 @@ namespace Astranox
         void getQueueIndices();
         void getSwapchainImages();
 
+        void acquireNextImage();
+
+        VkFramebuffer getCurrentFramebuffer() { return m_Framebuffers[m_CurrentImageIndex]; }
+        VkCommandBuffer getCurrentCommandBuffer() { return m_CommandBuffers[m_CurrentFramebufferIndex]; }
+
         void createRenderPass();
         void createFramebuffers();
-
-        // [TODO] Remove
-
-        //void createPipeline();
+        void createCommandBuffers();
+        void createSyncObjects();
 
     private:
         Ref<VulkanDevice> m_Device = nullptr;
@@ -54,6 +70,21 @@ namespace Astranox
         std::vector<SwapchainImage> m_Images;
 
         VkRenderPass m_RenderPass = VK_NULL_HANDLE;
+
         std::vector<VkFramebuffer> m_Framebuffers;
+        uint32_t m_CurrentFramebufferIndex = 0;
+        uint32_t m_CurrentImageIndex = 0;
+
+        Ref<VulkanCommandPool> m_CommandPool = nullptr;
+        uint32_t m_MaxFramesInFlight = 2;
+        std::vector<VkCommandBuffer> m_CommandBuffers;
+
+        std::vector<VkSemaphore> m_ImageAvailableSemaphores;
+        std::vector<VkSemaphore> m_RenderFinishedSemaphores;
+        std::vector<VkFence> m_InFlightFences;
+
+        // Remove
+		Ref<VulkanShader> m_Shader = nullptr;
+		Ref<VulkanPipeline> m_Pipeline = nullptr;
     };
 }
