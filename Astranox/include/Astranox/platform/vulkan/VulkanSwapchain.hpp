@@ -48,7 +48,19 @@ namespace Astranox
         void createFramebuffers();
         void createSyncObjects();
 
-        void createVertexBuffer();
+        void createBuffer(
+            VkDeviceSize bufferSize,
+            VkBufferUsageFlags usage,
+            VkMemoryPropertyFlags properties,
+            VkBuffer& buffer,
+            VkDeviceMemory& bufferMemory
+        );
+
+        void copyBuffer(
+            VkBuffer srcBuffer,
+            VkBuffer dstBuffer,
+            VkDeviceSize size
+        );
         
     private:
         Ref<VulkanDevice> m_Device = nullptr;

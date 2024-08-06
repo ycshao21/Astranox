@@ -156,7 +156,42 @@ namespace Astranox
             std::string fragmentShaderPath = "../Astranox-Rasterization/assets/shaders/frag.spv";
             m_Shader = VulkanShader::create(vertexShaderPath, fragmentShaderPath);
 
-            createVertexBuffer();
+            // Vertex buffer
+            {
+                VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
+
+                VkBuffer stagingBuffer;
+                VkDeviceMemory stagingBufferMemory;
+                createBuffer(
+                    bufferSize,
+                    VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                    stagingBuffer,
+                    stagingBufferMemory
+                );
+
+                // Upload data to staging buffer
+                void* data;
+                result = ::vkMapMemory(m_Device->getRaw(), stagingBufferMemory, 0, bufferSize, 0, &data);
+                VK_CHECK(result);
+                memcpy(data, vertices.data(), bufferSize);
+                ::vkUnmapMemory(m_Device->getRaw(), stagingBufferMemory);
+
+                createBuffer(
+                    bufferSize,
+                    VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                    m_VertexBuffer,
+                    m_VertexBufferMemory
+                );
+
+                copyBuffer(stagingBuffer, m_VertexBuffer, bufferSize);
+
+                ::vkDestroyBuffer(m_Device->getRaw(), stagingBuffer, nullptr);
+                ::vkFreeMemory(m_Device->getRaw(), stagingBufferMemory, nullptr);
+            }
+
+
 
             m_Pipeline = Ref<VulkanPipeline>::create(m_Shader);
             m_Pipeline->createPipeline();
@@ -557,21 +592,25 @@ namespace Astranox
         }
     }
 
-    void VulkanSwapchain::createVertexBuffer()
+    void VulkanSwapchain::createBuffer(
+        VkDeviceSize bufferSize,
+        VkBufferUsageFlags usage,
+        VkMemoryPropertyFlags properties,
+        VkBuffer& buffer,
+        VkDeviceMemory& bufferMemory
+    )
     {
-        VkDeviceSize bytes = sizeof(vertices[0]) * vertices.size();
-
         VkBufferCreateInfo bufferCreateInfo{};
         bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-        bufferCreateInfo.size = bytes;
-        bufferCreateInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+        bufferCreateInfo.size = bufferSize;
+        bufferCreateInfo.usage = usage;
         bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-        VkResult result = ::vkCreateBuffer(m_Device->getRaw(), &bufferCreateInfo, nullptr, &m_VertexBuffer);
+        VkResult result = ::vkCreateBuffer(m_Device->getRaw(), &bufferCreateInfo, nullptr, &buffer);
         VK_CHECK(result);
 
         VkMemoryRequirements memoryRequirements;
-        ::vkGetBufferMemoryRequirements(m_Device->getRaw(), m_VertexBuffer, &memoryRequirements);
+        ::vkGetBufferMemoryRequirements(m_Device->getRaw(), buffer, &memoryRequirements);
 
         VkPhysicalDeviceMemoryProperties memoryProperties;
         ::vkGetPhysicalDeviceMemoryProperties(m_Device->getPhysicalDevice()->getRaw(), &memoryProperties);
@@ -580,7 +619,7 @@ namespace Astranox
         for (; memoryTypeIndex < memoryProperties.memoryTypeCount; memoryTypeIndex++)
         {
             if ((memoryRequirements.memoryTypeBits & BIT(memoryTypeIndex))
-                && memoryProperties.memoryTypes[memoryTypeIndex].propertyFlags & (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
+                && memoryProperties.memoryTypes[memoryTypeIndex].propertyFlags & properties)
             {
                 break;
             }
@@ -592,16 +631,50 @@ namespace Astranox
             .allocationSize = memoryRequirements.size,
             .memoryTypeIndex = memoryTypeIndex,
         };
-        result = ::vkAllocateMemory(m_Device->getRaw(), &allocateInfo, nullptr, &m_VertexBufferMemory);
+        result = ::vkAllocateMemory(m_Device->getRaw(), &allocateInfo, nullptr, &bufferMemory);
         VK_CHECK(result);
 
-        void* data;
-        result = ::vkMapMemory(m_Device->getRaw(), m_VertexBufferMemory, 0, bytes, 0, &data);
+        result = ::vkBindBufferMemory(m_Device->getRaw(), buffer, bufferMemory, 0);
         VK_CHECK(result);
-        memcpy(data, vertices.data(), bytes);
-        ::vkUnmapMemory(m_Device->getRaw(), m_VertexBufferMemory);
+    }
 
-        result = ::vkBindBufferMemory(m_Device->getRaw(), m_VertexBuffer, m_VertexBufferMemory, 0);
+    void VulkanSwapchain::copyBuffer(
+        VkBuffer srcBuffer,
+        VkBuffer dstBuffer,
+        VkDeviceSize size
+    )
+    {
+        VkCommandBuffer commandBuffer = m_CommandPool->allocateCommandBuffer();
+
+        VkCommandBufferBeginInfo beginInfo{
+            .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+            .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+        };
+
+        VkResult result = ::vkBeginCommandBuffer(commandBuffer, &beginInfo);
         VK_CHECK(result);
+
+        VkBufferCopy copyRegion{
+            .srcOffset = 0,
+            .dstOffset = 0,
+            .size = size
+        };
+        ::vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
+
+        result = ::vkEndCommandBuffer(commandBuffer);
+        VK_CHECK(result);
+
+        VkSubmitInfo submitInfo{
+            .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+            .commandBufferCount = 1,
+            .pCommandBuffers = &commandBuffer,
+        };
+
+        result = ::vkQueueSubmit(m_Device->getGraphicsQueue(), 1, &submitInfo, VK_NULL_HANDLE);
+        VK_CHECK(result);
+
+        ::vkQueueWaitIdle(m_Device->getGraphicsQueue());
+
+        ::vkFreeCommandBuffers(m_Device->getRaw(), m_CommandPool->getGraphicsCommandPool(), 1, &commandBuffer);
     }
 }
