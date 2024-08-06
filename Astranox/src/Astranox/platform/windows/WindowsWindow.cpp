@@ -159,9 +159,15 @@ namespace Astranox
         swapchain->resize(width, height);
     }
 
+    void WindowsWindow::beginFrame()
+    {
+        // I don't like it...
+        m_Context.as<VulkanContext>()->getSwapchain()->beginFrame();
+    }
+
     void WindowsWindow::setVSync(bool enable)
     {
-        ::glfwSwapInterval(enable ? 1 : 0);  // [NOTE] 0: disable, 1: enable (vsync)
+        //::glfwSwapInterval(enable ? 1 : 0);  // [NOTE] 0: disable, 1: enable (vsync)
         m_Data.vsync = enable;
     }
 

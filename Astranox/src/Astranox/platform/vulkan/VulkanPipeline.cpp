@@ -41,10 +41,32 @@ namespace Astranox
 
 
         // Pipeline >>>
-        std::vector<VkVertexInputBindingDescription> vertexInputBindings;
-        std::vector<VkVertexInputAttributeDescription> vertexInputAttributes;
-
         // (1) Vertex Input
+        std::vector<VkVertexInputBindingDescription> vertexInputBindings {
+            {
+                .binding = 0,
+                .stride = 7 * sizeof(float),
+                .inputRate = VK_VERTEX_INPUT_RATE_VERTEX,
+            }
+        };
+
+        std::vector<VkVertexInputAttributeDescription> vertexInputAttributes {
+            // Position
+            {
+                .location = 0,
+                .binding = 0,
+                .format = VK_FORMAT_R32G32B32_SFLOAT,
+                .offset = 0
+            },
+            // Color
+            {
+                .location = 1,
+                .binding = 0,
+                .format = VK_FORMAT_R32G32B32A32_SFLOAT,
+                .offset = 3 * sizeof(float)
+            }
+        };
+
         VkPipelineVertexInputStateCreateInfo vertexInputInfo = {
             .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
             .vertexBindingDescriptionCount = static_cast<uint32_t>(vertexInputBindings.size()),

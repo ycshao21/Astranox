@@ -45,8 +45,11 @@ namespace Astranox
         {
             m_Window->pollEvents();
 
+            float startTime = std::chrono::duration<float>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
             if (!m_Minimized)
             {
+                m_Window->beginFrame();
+
                 // Update all layers
                 for (Layer* layer : m_LayerStack)
                 {

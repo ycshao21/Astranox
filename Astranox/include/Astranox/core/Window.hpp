@@ -33,6 +33,8 @@ namespace Astranox
         virtual void onResize(uint32_t width, uint32_t height) = 0;
 
         virtual void pollEvents() = 0;
+
+        virtual void beginFrame() = 0;
         virtual void swapBuffers() = 0;
 
     public:

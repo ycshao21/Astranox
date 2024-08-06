@@ -26,8 +26,8 @@ namespace Astranox
 
         void drawFrame();
 
-        void beginFrame() const;
-        void present() const;
+        void beginFrame();
+        void present();
 
     public:
         uint32_t getWidth() const { return m_SwapchainExtent.width; }
@@ -47,6 +47,8 @@ namespace Astranox
         void createRenderPass();
         void createFramebuffers();
         void createSyncObjects();
+
+        void createVertexBuffer();
         
     private:
         Ref<VulkanDevice> m_Device = nullptr;
@@ -85,5 +87,14 @@ namespace Astranox
         // Remove
 		Ref<VulkanShader> m_Shader = nullptr;
 		Ref<VulkanPipeline> m_Pipeline = nullptr;
+
+        mutable std::vector<float> vertices = {
+             0.0f, -0.5f, 0.0f, 0.1f, 0.1f, 0.9f, 1.0f,
+             0.5f,  0.5f, 0.0f, 0.1f, 0.9f, 0.1f, 1.0f,
+            -0.5f,  0.5f, 0.0f, 0.9f, 0.1f, 0.1f, 1.0f,
+        };
+
+        VkBuffer m_VertexBuffer = VK_NULL_HANDLE;
+        VkDeviceMemory m_VertexBufferMemory = VK_NULL_HANDLE;
     };
 }

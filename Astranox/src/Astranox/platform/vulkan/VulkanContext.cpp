@@ -66,7 +66,10 @@ namespace Astranox
 
     void VulkanContext::swapBuffers()
     {
+        // [TODO] Remove this line
         m_Swapchain->drawFrame();
+
+        m_Swapchain->present();
     }
 
     void VulkanContext::createInstance()

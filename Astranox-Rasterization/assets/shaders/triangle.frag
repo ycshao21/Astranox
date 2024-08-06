@@ -1,9 +1,9 @@
-#version 450
+#version 450 core
 
-layout(location = 0) in vec3 fragColor;
+layout(location = 0) in vec4 v_Color;
 
 layout(location = 0) out vec4 outColor;
 
 void main() {
-    outColor = vec4(fragColor, 1.0);
+    outColor = v_Color;
 }

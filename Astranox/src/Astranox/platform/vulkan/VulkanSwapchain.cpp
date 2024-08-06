@@ -57,7 +57,7 @@ namespace Astranox
             return;
         }
 
-        AST_CORE_TRACE("Swapchain size: {0}x{1}", m_SwapchainExtent.width, m_SwapchainExtent.height);
+        //AST_CORE_TRACE("Swapchain size: {0}x{1}", m_SwapchainExtent.width, m_SwapchainExtent.height);
         // <<< Choose extent
 
 
@@ -150,17 +150,27 @@ namespace Astranox
 
         // Remove these
 
-        std::string vertexShaderPath = "../Astranox-Rasterization/assets/shaders/vert.spv";
-        std::string fragmentShaderPath = "../Astranox-Rasterization/assets/shaders/frag.spv";
-        m_Shader = VulkanShader::create(vertexShaderPath, fragmentShaderPath);
+        if (!m_Shader)
+        {
+            std::string vertexShaderPath = "../Astranox-Rasterization/assets/shaders/vert.spv";
+            std::string fragmentShaderPath = "../Astranox-Rasterization/assets/shaders/frag.spv";
+            m_Shader = VulkanShader::create(vertexShaderPath, fragmentShaderPath);
 
-        m_Pipeline = Ref<VulkanPipeline>::create(m_Shader);
-        m_Pipeline->createPipeline();
+            createVertexBuffer();
+
+            m_Pipeline = Ref<VulkanPipeline>::create(m_Shader);
+            m_Pipeline->createPipeline();
+        }
     }
 
     void VulkanSwapchain::destroy()
     {
         m_Device->waitIdle();
+
+        // Remove
+        ::vkDestroyBuffer(m_Device->getRaw(), m_VertexBuffer, nullptr);
+        ::vkFreeMemory(m_Device->getRaw(), m_VertexBufferMemory, nullptr);
+
 
         for (size_t i = 0; i < m_MaxFramesInFlight; i++)
         {
@@ -202,39 +212,17 @@ namespace Astranox
 
     void VulkanSwapchain::drawFrame()
     {
-        ::vkWaitForFences(m_Device->getRaw(), 1, &m_InFlightFences[m_CurrentFramebufferIndex], VK_TRUE, std::numeric_limits<uint64_t>::max());
-        ::vkResetFences(m_Device->getRaw(), 1, &m_InFlightFences[m_CurrentFramebufferIndex]);
-
-        // Acquire next image >>>
-        VkResult result = ::vkAcquireNextImageKHR(
-            m_Device->getRaw(),
-            m_Swapchain,
-            std::numeric_limits<uint64_t>::max(),
-            m_ImageAvailableSemaphores[m_CurrentFramebufferIndex],
-            VK_NULL_HANDLE,
-            &m_CurrentImageIndex
-        );
-
-        if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-            this->resize(m_SwapchainExtent.width, m_SwapchainExtent.height);
-        } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
-            VK_CHECK(result);
-        }
-        // <<< Acquire next image
-
-        vkResetCommandBuffer(getCurrentCommandBuffer(), 0);
-
         // Begin command buffer >>>
         VkCommandBufferBeginInfo beginInfo{
             .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
             .flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT,
             .pInheritanceInfo = nullptr
         };
-        result = ::vkBeginCommandBuffer(getCurrentCommandBuffer(), &beginInfo);
+        VkResult result = ::vkBeginCommandBuffer(getCurrentCommandBuffer(), &beginInfo);
         VK_CHECK(result);
         // <<< Begin command buffer
 
-        VkClearValue clearColor = { 0.0f, 0.0f, 0.0f, 1.0f };  // Black
+        VkClearValue clearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
 
         // Begin render pass >>>
         VkRenderPassBeginInfo renderPassInfo{
@@ -244,7 +232,7 @@ namespace Astranox
             .framebuffer = getCurrentFramebuffer(),
             .renderArea = {
                 .offset = { 0, 0 },
-                .extent = { m_SwapchainExtent }
+                .extent = m_SwapchainExtent
             },
             .clearValueCount = 1,
             .pClearValues = &clearColor
@@ -272,8 +260,14 @@ namespace Astranox
         };
         vkCmdSetScissor(getCurrentCommandBuffer(), 0, 1, &scissor);
 
-        // Draw call
+        VkDeviceSize offsets[] = { 0 };
+        vkCmdBindVertexBuffers(getCurrentCommandBuffer(), 0, 1, &m_VertexBuffer, offsets);
+
+
+        // --------------------- Draw call ---------------------
         vkCmdDraw(getCurrentCommandBuffer(), 3, 1, 0, 0);
+        // --------------------- Draw call ---------------------
+
 
         // End render pass
         ::vkCmdEndRenderPass(getCurrentCommandBuffer());
@@ -281,8 +275,35 @@ namespace Astranox
         // End command buffer
         result = ::vkEndCommandBuffer(getCurrentCommandBuffer());
         VK_CHECK(result);
+    }
 
+    void VulkanSwapchain::beginFrame()
+    {
+        ::vkWaitForFences(m_Device->getRaw(), 1, &m_InFlightFences[m_CurrentFramebufferIndex], VK_TRUE, std::numeric_limits<uint64_t>::max());
+        ::vkResetFences(m_Device->getRaw(), 1, &m_InFlightFences[m_CurrentFramebufferIndex]);
 
+        // Acquire next image >>>
+        VkResult result = ::vkAcquireNextImageKHR(
+            m_Device->getRaw(),
+            m_Swapchain,
+            std::numeric_limits<uint64_t>::max(),
+            m_ImageAvailableSemaphores[m_CurrentFramebufferIndex],
+            VK_NULL_HANDLE,
+            &m_CurrentImageIndex
+        );
+
+        if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+            this->resize(m_SwapchainExtent.width, m_SwapchainExtent.height);
+        } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+            VK_CHECK(result);
+        }
+        // <<< Acquire next image
+
+        vkResetCommandBuffer(getCurrentCommandBuffer(), 0);
+    }
+
+    void VulkanSwapchain::present()
+    {
         std::vector<VkSemaphore> waitSemaphores = { m_ImageAvailableSemaphores[m_CurrentFramebufferIndex]};
         std::vector<VkSemaphore> signalSemaphores = { m_RenderFinishedSemaphores[m_CurrentFramebufferIndex]};
         std::vector<VkPipelineStageFlags> waitStages = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
@@ -298,7 +319,7 @@ namespace Astranox
             .pSignalSemaphores = signalSemaphores.data()
         };
 
-        result = ::vkQueueSubmit(m_Device->getGraphicsQueue(), 1, &submitInfo, m_InFlightFences[m_CurrentFramebufferIndex]);
+        VkResult result = ::vkQueueSubmit(m_Device->getGraphicsQueue(), 1, &submitInfo, m_InFlightFences[m_CurrentFramebufferIndex]);
         VK_CHECK(result);
 
         VkPresentInfoKHR presentInfo{
@@ -321,28 +342,6 @@ namespace Astranox
         }
 
         m_CurrentFramebufferIndex = (m_CurrentFramebufferIndex + 1) % m_MaxFramesInFlight;
-    }
-
-    void VulkanSwapchain::beginFrame() const
-    {
-        //m_CurrentImageIndex = acquireNextImage();
-    }
-
-    void VulkanSwapchain::present() const
-    {
-        //VkPresentInfoKHR presentInfo{
-        //    .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-        //    .pNext = nullptr,
-        //    .waitSemaphoreCount = 0,
-        //    .pWaitSemaphores = nullptr,
-        //    .swapchainCount = 1,
-        //    .pSwapchains = &m_Swapchain,
-        //    .pImageIndices = nullptr,
-        //    .pResults = nullptr
-        //};
-
-        //VkResult result = ::vkQueuePresentKHR(m_Device->getGraphicsQueue(), &presentInfo);
-        //VK_CHECK(result);
     }
 
     void VulkanSwapchain::chooseSurfaceFormat()
@@ -556,5 +555,53 @@ namespace Astranox
             result = ::vkCreateFence(m_Device->getRaw(), &fenceInfo, nullptr, &m_InFlightFences[i]);
             VK_CHECK(result);
         }
+    }
+
+    void VulkanSwapchain::createVertexBuffer()
+    {
+        VkDeviceSize bytes = sizeof(vertices[0]) * vertices.size();
+
+        VkBufferCreateInfo bufferCreateInfo{};
+        bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+        bufferCreateInfo.size = bytes;
+        bufferCreateInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+        bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+        VkResult result = ::vkCreateBuffer(m_Device->getRaw(), &bufferCreateInfo, nullptr, &m_VertexBuffer);
+        VK_CHECK(result);
+
+        VkMemoryRequirements memoryRequirements;
+        ::vkGetBufferMemoryRequirements(m_Device->getRaw(), m_VertexBuffer, &memoryRequirements);
+
+        VkPhysicalDeviceMemoryProperties memoryProperties;
+        ::vkGetPhysicalDeviceMemoryProperties(m_Device->getPhysicalDevice()->getRaw(), &memoryProperties);
+         
+        uint32_t memoryTypeIndex = 0;
+        for (; memoryTypeIndex < memoryProperties.memoryTypeCount; memoryTypeIndex++)
+        {
+            if ((memoryRequirements.memoryTypeBits & BIT(memoryTypeIndex))
+                && memoryProperties.memoryTypes[memoryTypeIndex].propertyFlags & (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
+            {
+                break;
+            }
+        }
+        AST_CORE_ASSERT(memoryTypeIndex < memoryProperties.memoryTypeCount, "Failed to find suitable memory type");
+
+        VkMemoryAllocateInfo allocateInfo{
+            .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+            .allocationSize = memoryRequirements.size,
+            .memoryTypeIndex = memoryTypeIndex,
+        };
+        result = ::vkAllocateMemory(m_Device->getRaw(), &allocateInfo, nullptr, &m_VertexBufferMemory);
+        VK_CHECK(result);
+
+        void* data;
+        result = ::vkMapMemory(m_Device->getRaw(), m_VertexBufferMemory, 0, bytes, 0, &data);
+        VK_CHECK(result);
+        memcpy(data, vertices.data(), bytes);
+        ::vkUnmapMemory(m_Device->getRaw(), m_VertexBufferMemory);
+
+        result = ::vkBindBufferMemory(m_Device->getRaw(), m_VertexBuffer, m_VertexBufferMemory, 0);
+        VK_CHECK(result);
     }
 }
