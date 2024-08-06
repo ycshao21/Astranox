@@ -22,8 +22,7 @@ namespace Astranox
         Window& window = Application::get().getWindow();
         GLFWwindow* windowHandle = static_cast<GLFWwindow*>(window.getHandle());
 
-        VkResult result = ::glfwCreateWindowSurface(instance, windowHandle, nullptr, &m_Surface);
-        VK_CHECK(result);
+        VK_CHECK(::glfwCreateWindowSurface(instance, windowHandle, nullptr, &m_Surface));
 
         getQueueIndices();
         chooseSurfaceFormat();
@@ -35,8 +34,7 @@ namespace Astranox
 
         // Choose extent >>>
         VkSurfaceCapabilitiesKHR surfaceCapabilities{};
-        VkResult result = ::vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice->getRaw(), m_Surface, &surfaceCapabilities);
-        VK_CHECK(result);
+        VK_CHECK(::vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice->getRaw(), m_Surface, &surfaceCapabilities));
 
         if (surfaceCapabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
             // [NOTE] If the surface size is defined, we use it.
@@ -114,9 +112,7 @@ namespace Astranox
         if (m_Swapchain != VK_NULL_HANDLE) {
             ::vkDestroySwapchainKHR(m_Device->getRaw(), m_Swapchain, nullptr);
         }
-
-        result = ::vkCreateSwapchainKHR(m_Device->getRaw(), &createInfo, nullptr, &m_Swapchain);
-        VK_CHECK(result);
+        VK_CHECK(::vkCreateSwapchainKHR(m_Device->getRaw(), &createInfo, nullptr, &m_Swapchain));
 
         // Destroy old image views
         for (auto& image : m_Images)
@@ -172,8 +168,7 @@ namespace Astranox
 
                 // Upload data to staging buffer
                 void* data;
-                result = ::vkMapMemory(m_Device->getRaw(), stagingBufferMemory, 0, bufferSize, 0, &data);
-                VK_CHECK(result);
+                VK_CHECK(::vkMapMemory(m_Device->getRaw(), stagingBufferMemory, 0, bufferSize, 0, &data));
                 memcpy(data, vertices.data(), bufferSize);
                 ::vkUnmapMemory(m_Device->getRaw(), stagingBufferMemory);
 
@@ -253,8 +248,7 @@ namespace Astranox
             .flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT,
             .pInheritanceInfo = nullptr
         };
-        VkResult result = ::vkBeginCommandBuffer(getCurrentCommandBuffer(), &beginInfo);
-        VK_CHECK(result);
+        VK_CHECK(::vkBeginCommandBuffer(getCurrentCommandBuffer(), &beginInfo));
         // <<< Begin command buffer
 
         VkClearValue clearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
@@ -308,8 +302,7 @@ namespace Astranox
         ::vkCmdEndRenderPass(getCurrentCommandBuffer());
 
         // End command buffer
-        result = ::vkEndCommandBuffer(getCurrentCommandBuffer());
-        VK_CHECK(result);
+        VK_CHECK(::vkEndCommandBuffer(getCurrentCommandBuffer()));
     }
 
     void VulkanSwapchain::beginFrame()
@@ -354,8 +347,7 @@ namespace Astranox
             .pSignalSemaphores = signalSemaphores.data()
         };
 
-        VkResult result = ::vkQueueSubmit(m_Device->getGraphicsQueue(), 1, &submitInfo, m_InFlightFences[m_CurrentFramebufferIndex]);
-        VK_CHECK(result);
+        VK_CHECK(::vkQueueSubmit(m_Device->getGraphicsQueue(), 1, &submitInfo, m_InFlightFences[m_CurrentFramebufferIndex]));
 
         VkPresentInfoKHR presentInfo{
             .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
@@ -367,7 +359,7 @@ namespace Astranox
             .pImageIndices = &m_CurrentImageIndex,
             .pResults = nullptr
         };
-        result = ::vkQueuePresentKHR(m_Device->getGraphicsQueue(), &presentInfo);
+        VkResult result = ::vkQueuePresentKHR(m_Device->getGraphicsQueue(), &presentInfo);
         VK_CHECK(result);
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR) {
@@ -418,8 +410,7 @@ namespace Astranox
             }
 
             VkBool32 presentSupport = false;
-            VkResult result = ::vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice->getRaw(), i, m_Surface, &presentSupport);
-            VK_CHECK(result);
+            VK_CHECK(::vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice->getRaw(), i, m_Surface, &presentSupport));
 
             if (presentSupport) {
                 presentFamily = i;
@@ -473,9 +464,7 @@ namespace Astranox
         {
             m_Images[i].image = images[i];
             createInfo.image = images[i];
-
-            VkResult result = ::vkCreateImageView(m_Device->getRaw(), &createInfo, nullptr, &m_Images[i].imageView);
-            VK_CHECK(result);
+            VK_CHECK(::vkCreateImageView(m_Device->getRaw(), &createInfo, nullptr, &m_Images[i].imageView));
         }
         // <<< Create image views
     }
@@ -530,9 +519,7 @@ namespace Astranox
             .dependencyCount = 1,
             .pDependencies = &dependency
         };
-
-        VkResult result = ::vkCreateRenderPass(m_Device->getRaw(), &renderPassInfo, nullptr, &m_RenderPass);
-        VK_CHECK(result);
+        VK_CHECK(::vkCreateRenderPass(m_Device->getRaw(), &renderPassInfo, nullptr, &m_RenderPass));
     }
 
     void VulkanSwapchain::createFramebuffers()
@@ -554,13 +541,12 @@ namespace Astranox
         {
             createInfo.pAttachments = &m_Images[i].imageView;
 
-            VkResult result = ::vkCreateFramebuffer(
+            VK_CHECK(::vkCreateFramebuffer(
                 m_Device->getRaw(),
                 &createInfo,
                 nullptr,
                 &m_Framebuffers[i]
-            );
-            VK_CHECK(result);
+            ));
         }
     }
 
@@ -582,13 +568,10 @@ namespace Astranox
 
         for (size_t i = 0; i < m_MaxFramesInFlight; i++)
         {
-            VkResult result = ::vkCreateSemaphore(m_Device->getRaw(), &semaphoreInfo, nullptr, &m_ImageAvailableSemaphores[i]);
-            VK_CHECK(result);
-            result = ::vkCreateSemaphore(m_Device->getRaw(), &semaphoreInfo, nullptr, &m_RenderFinishedSemaphores[i]);
-            VK_CHECK(result);
+            VK_CHECK(::vkCreateSemaphore(m_Device->getRaw(), &semaphoreInfo, nullptr, &m_ImageAvailableSemaphores[i]));
+            VK_CHECK(::vkCreateSemaphore(m_Device->getRaw(), &semaphoreInfo, nullptr, &m_RenderFinishedSemaphores[i]));
 
-            result = ::vkCreateFence(m_Device->getRaw(), &fenceInfo, nullptr, &m_InFlightFences[i]);
-            VK_CHECK(result);
+            VK_CHECK(::vkCreateFence(m_Device->getRaw(), &fenceInfo, nullptr, &m_InFlightFences[i]));
         }
     }
 
@@ -606,8 +589,7 @@ namespace Astranox
         bufferCreateInfo.usage = usage;
         bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-        VkResult result = ::vkCreateBuffer(m_Device->getRaw(), &bufferCreateInfo, nullptr, &buffer);
-        VK_CHECK(result);
+        VK_CHECK(::vkCreateBuffer(m_Device->getRaw(), &bufferCreateInfo, nullptr, &buffer));
 
         VkMemoryRequirements memoryRequirements;
         ::vkGetBufferMemoryRequirements(m_Device->getRaw(), buffer, &memoryRequirements);
@@ -631,11 +613,8 @@ namespace Astranox
             .allocationSize = memoryRequirements.size,
             .memoryTypeIndex = memoryTypeIndex,
         };
-        result = ::vkAllocateMemory(m_Device->getRaw(), &allocateInfo, nullptr, &bufferMemory);
-        VK_CHECK(result);
-
-        result = ::vkBindBufferMemory(m_Device->getRaw(), buffer, bufferMemory, 0);
-        VK_CHECK(result);
+        VK_CHECK(::vkAllocateMemory(m_Device->getRaw(), &allocateInfo, nullptr, &bufferMemory));
+        VK_CHECK(::vkBindBufferMemory(m_Device->getRaw(), buffer, bufferMemory, 0));
     }
 
     void VulkanSwapchain::copyBuffer(
@@ -651,8 +630,7 @@ namespace Astranox
             .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
         };
 
-        VkResult result = ::vkBeginCommandBuffer(commandBuffer, &beginInfo);
-        VK_CHECK(result);
+        VK_CHECK(::vkBeginCommandBuffer(commandBuffer, &beginInfo));
 
         VkBufferCopy copyRegion{
             .srcOffset = 0,
@@ -661,17 +639,14 @@ namespace Astranox
         };
         ::vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
 
-        result = ::vkEndCommandBuffer(commandBuffer);
-        VK_CHECK(result);
+        VK_CHECK(::vkEndCommandBuffer(commandBuffer));
 
         VkSubmitInfo submitInfo{
             .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
             .commandBufferCount = 1,
             .pCommandBuffers = &commandBuffer,
         };
-
-        result = ::vkQueueSubmit(m_Device->getGraphicsQueue(), 1, &submitInfo, VK_NULL_HANDLE);
-        VK_CHECK(result);
+        VK_CHECK(::vkQueueSubmit(m_Device->getGraphicsQueue(), 1, &submitInfo, VK_NULL_HANDLE));
 
         ::vkQueueWaitIdle(m_Device->getGraphicsQueue());
 

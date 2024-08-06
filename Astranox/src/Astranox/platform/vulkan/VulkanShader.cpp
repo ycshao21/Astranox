@@ -60,8 +60,7 @@ namespace Astranox
 
         createInfo.codeSize = vertexCode.size();
         createInfo.pCode = reinterpret_cast<const uint32_t*>(vertexCode.data());
-        VkResult result = ::vkCreateShaderModule(device->getRaw(), &createInfo, nullptr, &m_VertexShaderModule);
-        VK_CHECK(result);
+        VK_CHECK(::vkCreateShaderModule(device->getRaw(), &createInfo, nullptr, &m_VertexShaderModule));
 
         VkPipelineShaderStageCreateInfo vertexShaderStage{
             .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
@@ -74,8 +73,7 @@ namespace Astranox
 
         createInfo.codeSize = fragmentCode.size();
         createInfo.pCode = reinterpret_cast<const uint32_t*>(fragmentCode.data());
-        result = ::vkCreateShaderModule(device->getRaw(), &createInfo, nullptr, &m_FragmentShaderModule);
-        VK_CHECK(result);
+        VK_CHECK(::vkCreateShaderModule(device->getRaw(), &createInfo, nullptr, &m_FragmentShaderModule));
 
         VkPipelineShaderStageCreateInfo fragmentShaderStage{
             .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,

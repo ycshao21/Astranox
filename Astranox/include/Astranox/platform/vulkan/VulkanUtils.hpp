@@ -2,11 +2,7 @@
 #include "Astranox/core/Base.hpp"
 #include "VulkanPhysicalDevice.hpp"
 
-#ifdef AST_ENABLE_ASSERTS
-    #define VK_CHECK(x) Astranox::VulkanUtils::checkResult(x)
-#else
-    #define VK_CHECK(x)
-#endif
+#define VK_CHECK(result) Astranox::VulkanUtils::checkResult(result)
 
 #ifdef AST_CONFIG_DEBUG
     #define VK_ENABLE_VALIDATION_LAYERS 1
@@ -31,7 +27,12 @@ namespace Astranox
         void checkDeviceExtensionSupport(Ref<VulkanPhysicalDevice> physicalDevice);
 
         std::string vkResultToString(VkResult result);
-        void checkResult(VkResult result);
+
+        inline void checkResult(VkResult result)
+        {
+            AST_CORE_ASSERT(result == VK_SUCCESS, "Vulkan error: {0}", vkResultToString(result));
+        }
+
 
         std::string vkPhysicalDeviceTypeToString(VkPhysicalDeviceType type);
     }

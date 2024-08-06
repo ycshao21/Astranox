@@ -35,8 +35,7 @@ namespace Astranox
             .pPushConstantRanges = pushConstantRanges.data(),
         };
 
-        VkResult result = ::vkCreatePipelineLayout(device->getRaw(), &pipelineLayoutInfo, nullptr, &m_PipelineLayout);
-        VK_CHECK(result);
+        VK_CHECK(::vkCreatePipelineLayout(device->getRaw(), &pipelineLayoutInfo, nullptr, &m_PipelineLayout));
         // <<< Pipeline Layout
 
 
@@ -193,8 +192,7 @@ namespace Astranox
             .basePipelineIndex = -1,
         };
 
-        result = ::vkCreateGraphicsPipelines(device->getRaw(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_Pipeline);
-        VK_CHECK(result);
+        VK_CHECK(::vkCreateGraphicsPipelines(device->getRaw(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_Pipeline));
         // <<< Pipeline
 
 
@@ -207,8 +205,7 @@ namespace Astranox
             .pInitialData = nullptr,
         };
 
-        result = ::vkCreatePipelineCache(device->getRaw(), &pipelineCacheInfo, nullptr, &m_PipelineCache);
-        VK_CHECK(result);
+        VK_CHECK(::vkCreatePipelineCache(device->getRaw(), &pipelineCacheInfo, nullptr, &m_PipelineCache));
         // <<< Pipeline Cache
     }
 }

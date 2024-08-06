@@ -16,8 +16,7 @@ namespace Astranox
             .flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
             .queueFamilyIndex = queueFamilyIndices.graphicsFamily.value(),
         };
-        VkResult result = ::vkCreateCommandPool(device->getRaw(), &poolInfo, nullptr, &m_GraphicsCommandPool);
-        VK_CHECK(result);
+        VK_CHECK(::vkCreateCommandPool(device->getRaw(), &poolInfo, nullptr, &m_GraphicsCommandPool));
     }
 
     VulkanCommandPool::~VulkanCommandPool()
@@ -38,8 +37,7 @@ namespace Astranox
         };
 
         VkCommandBuffer commandBuffer = VK_NULL_HANDLE;
-        VkResult result = ::vkAllocateCommandBuffers(device->getRaw(), &allocInfo, &commandBuffer);
-        VK_CHECK(result);
+        VK_CHECK(::vkAllocateCommandBuffers(device->getRaw(), &allocInfo, &commandBuffer));
 
         return commandBuffer;
     }
@@ -56,8 +54,7 @@ namespace Astranox
         };
 
         std::vector<VkCommandBuffer> commandBuffers(count);
-        VkResult result = ::vkAllocateCommandBuffers(device->getRaw(), &allocInfo, commandBuffers.data());
-        VK_CHECK(result);
+        VK_CHECK(::vkAllocateCommandBuffers(device->getRaw(), &allocInfo, commandBuffers.data()));
 
         return commandBuffers;
     }

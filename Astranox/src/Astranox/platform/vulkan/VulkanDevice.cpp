@@ -61,8 +61,7 @@ namespace Astranox
             createInfo.ppEnabledLayerNames = VulkanUtils::validationLayers.data();
         }
 
-        VkResult result = ::vkCreateDevice(m_PhysicalDevice->getRaw(), &createInfo, nullptr, &m_Device);
-        VK_CHECK(result);
+        VK_CHECK(::vkCreateDevice(m_PhysicalDevice->getRaw(), &createInfo, nullptr, &m_Device));
 
         ::vkGetDeviceQueue(m_Device, queueFamilyIndices.graphicsFamily.value(), 0, &m_GraphicsQueue);
     }

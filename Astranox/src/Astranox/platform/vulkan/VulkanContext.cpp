@@ -117,9 +117,7 @@ namespace Astranox
         createInfo.enabledExtensionCount = static_cast<uint32_t>(requiredExtensions.size());
         createInfo.ppEnabledExtensionNames = requiredExtensions.data();
 
-
-        VkResult result = ::vkCreateInstance(&createInfo, nullptr, &s_Instance);
-        VK_CHECK(result);
+        VK_CHECK(::vkCreateInstance(&createInfo, nullptr, &s_Instance));
     }
 
     void VulkanContext::setupDebugMessenger()
@@ -144,7 +142,6 @@ namespace Astranox
             .pfnUserCallback = debugCallback,
             .pUserData = nullptr
         };
-        VkResult result = vkCreateDebugUtilsMessengerEXT(s_Instance, &debugCreateInfo, nullptr, &m_DebugMessenger);
-        VK_CHECK(result);
+        VK_CHECK(vkCreateDebugUtilsMessengerEXT(s_Instance, &debugCreateInfo, nullptr, &m_DebugMessenger));
     }
 }
