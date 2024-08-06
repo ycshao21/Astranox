@@ -101,12 +101,18 @@ namespace Astranox
 		Ref<VulkanPipeline> m_Pipeline = nullptr;
 
         mutable std::vector<float> vertices = {
-             0.0f, -0.5f, 0.0f, 0.1f, 0.1f, 0.9f, 1.0f,
              0.5f,  0.5f, 0.0f, 0.1f, 0.9f, 0.1f, 1.0f,
             -0.5f,  0.5f, 0.0f, 0.9f, 0.1f, 0.1f, 1.0f,
+            -0.5f, -0.5f, 0.0f, 0.9f, 0.1f, 0.1f, 1.0f,
+             0.5f, -0.5f, 0.0f, 0.9f, 0.9f, 0.9f, 1.0f,
         };
-
         VkBuffer m_VertexBuffer = VK_NULL_HANDLE;
         VkDeviceMemory m_VertexBufferMemory = VK_NULL_HANDLE;
+
+        mutable std::vector<uint16_t> indices = {
+            0, 1, 2, 2, 3, 0
+        };
+        VkBuffer m_IndexBuffer = VK_NULL_HANDLE;
+        VkDeviceMemory m_IndexBufferMemory = VK_NULL_HANDLE;
     };
 }

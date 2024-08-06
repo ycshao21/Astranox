@@ -186,6 +186,41 @@ namespace Astranox
                 ::vkFreeMemory(m_Device->getRaw(), stagingBufferMemory, nullptr);
             }
 
+            // Index buffer
+            {
+                VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
+
+                VkBuffer stagingBuffer;
+                VkDeviceMemory stagingBufferMemory;
+                createBuffer(
+                    bufferSize,
+                    VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                    stagingBuffer,
+                    stagingBufferMemory
+                );
+
+                // Upload data to staging buffer
+                void* data;
+                VK_CHECK(::vkMapMemory(m_Device->getRaw(), stagingBufferMemory, 0, bufferSize, 0, &data));
+                memcpy(data, indices.data(), bufferSize);
+                ::vkUnmapMemory(m_Device->getRaw(), stagingBufferMemory);
+
+                createBuffer(
+                    bufferSize,
+                    VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                    m_IndexBuffer,
+                    m_IndexBufferMemory
+                );
+
+                copyBuffer(stagingBuffer, m_IndexBuffer, bufferSize);
+
+                ::vkDestroyBuffer(m_Device->getRaw(), stagingBuffer, nullptr);
+                ::vkFreeMemory(m_Device->getRaw(), stagingBufferMemory, nullptr);
+            }
+
+
 
 
             m_Pipeline = Ref<VulkanPipeline>::create(m_Shader);
@@ -200,6 +235,9 @@ namespace Astranox
         // Remove
         ::vkDestroyBuffer(m_Device->getRaw(), m_VertexBuffer, nullptr);
         ::vkFreeMemory(m_Device->getRaw(), m_VertexBufferMemory, nullptr);
+
+        ::vkDestroyBuffer(m_Device->getRaw(), m_IndexBuffer, nullptr);
+        ::vkFreeMemory(m_Device->getRaw(), m_IndexBufferMemory, nullptr);
 
 
         for (size_t i = 0; i < m_MaxFramesInFlight; i++)
@@ -292,9 +330,11 @@ namespace Astranox
         VkDeviceSize offsets[] = { 0 };
         vkCmdBindVertexBuffers(getCurrentCommandBuffer(), 0, 1, &m_VertexBuffer, offsets);
 
+        vkCmdBindIndexBuffer(getCurrentCommandBuffer(), m_IndexBuffer, 0, VK_INDEX_TYPE_UINT16);
+
 
         // --------------------- Draw call ---------------------
-        vkCmdDraw(getCurrentCommandBuffer(), 3, 1, 0, 0);
+        vkCmdDrawIndexed(getCurrentCommandBuffer(), static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
         // --------------------- Draw call ---------------------
 
 
