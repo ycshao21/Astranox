@@ -80,6 +80,7 @@ namespace Astranox
         void createImage(
             uint32_t width,
             uint32_t height,
+            uint32_t mipLevels,
             VkFormat format,
             VkImageTiling tiling,
             VkImageUsageFlags usage,
@@ -90,7 +91,8 @@ namespace Astranox
         VkImageView createImageView(
             VkImage image,
             VkFormat format,
-            VkImageAspectFlags aspectFlags
+            VkImageAspectFlags aspectFlags,
+            uint32_t mipLevels
         );
 
         void beginOneTimeCommandBuffer(VkCommandBuffer& commandBuffer);
@@ -100,7 +102,8 @@ namespace Astranox
             VkImage image,
             VkFormat format,
             VkImageLayout oldLayout,
-            VkImageLayout newLayout
+            VkImageLayout newLayout,
+            uint32_t mipLevels
         );
 
         void copyBufferToImage(
@@ -108,6 +111,13 @@ namespace Astranox
             VkImage image,
             uint32_t width,
             uint32_t height
+        );
+
+        void generateMipmaps(
+            VkImage image,
+            int32_t texWidth,
+            int32_t texHeight,
+            uint32_t mipLevels
         );
 
         void loadModel(const std::string& modelPath);
@@ -153,6 +163,8 @@ namespace Astranox
         VkImage m_DepthImage = VK_NULL_HANDLE;
         VkDeviceMemory m_DepthImageMemory = VK_NULL_HANDLE;
         VkImageView m_DepthImageView = VK_NULL_HANDLE;
+
+        uint32_t m_TextureMipLevels = 1;
 
         VkImage m_TextureImage;
         VkDeviceMemory m_TextureImageMemory;
