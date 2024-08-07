@@ -42,6 +42,9 @@ dependencies = {
 	stb_image = {
 		includeDir = "%{wks.location}/Astranox/vendor/stb_image",
 	},
+	tiny_obj_loader = {
+		includeDir = "%{wks.location}/Astranox/vendor/tiny_obj_loader",
+	},
 }
 
 

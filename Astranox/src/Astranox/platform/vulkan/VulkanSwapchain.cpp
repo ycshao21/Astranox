@@ -7,10 +7,29 @@
 #include "Astranox/core/Application.hpp"
 
 #include <GLFW/glfw3.h>
+
+#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/hash.hpp>
 
 #include <chrono>
+
 #include "stb_image/stb_image.h"
+#include "tinyobjloader/tiny_obj_loader.h"
+
+namespace std
+{
+    template<>
+    struct hash<Astranox::Vertex>
+    {
+        size_t operator()(Astranox::Vertex const& vertex) const
+        {
+            return ((hash<glm::vec3>()(vertex.position) ^
+                (hash<glm::vec4>()(vertex.color) << 1)) >> 1) ^
+                (hash<glm::vec2>()(vertex.texCoord) << 1);
+        }
+    };
+}
 
 namespace Astranox
 {
@@ -189,10 +208,13 @@ namespace Astranox
             m_Pipeline = Ref<VulkanPipeline>::create(m_Shader);
             m_Pipeline->createPipeline();
 
+            std::string modelPath = "../Astranox-Rasterization/assets/models/viking_room.obj";
+            loadModel(modelPath);
+
             // Texture
             {
                 // Texture image >>>
-                std::string texturePath = "../Astranox-Rasterization/assets/textures/statue.jpg";
+                std::string texturePath = "../Astranox-Rasterization/assets/textures/viking_room.png";
                 int texWidth, texHeight, texChannels;
                 stbi_uc* pixels = stbi_load(texturePath.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
                 AST_CORE_ASSERT(pixels, "Failed to load texture image");
@@ -268,7 +290,7 @@ namespace Astranox
 
             // Vertex buffer
             {
-                VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
+                VkDeviceSize bufferSize = sizeof(Vertex) * vertices.size();
 
                 VkBuffer stagingBuffer;
                 VkDeviceMemory stagingBufferMemory;
@@ -544,7 +566,7 @@ namespace Astranox
 
         VkDeviceSize offsets[] = { 0 };
         vkCmdBindVertexBuffers(getCurrentCommandBuffer(), 0, 1, &m_VertexBuffer, offsets);
-        vkCmdBindIndexBuffer(getCurrentCommandBuffer(), m_IndexBuffer, 0, VK_INDEX_TYPE_UINT16);
+        vkCmdBindIndexBuffer(getCurrentCommandBuffer(), m_IndexBuffer, 0, VK_INDEX_TYPE_UINT32);
         vkCmdBindDescriptorSets(getCurrentCommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline->getLayout(), 0, 1, &m_DescriptorSets[m_CurrentFramebufferIndex], 0, nullptr);
 
 
@@ -1114,5 +1136,47 @@ namespace Astranox
         );
 
         endOneTimeCommandBuffer(commandBuffer);
+    }
+
+    void VulkanSwapchain::loadModel(const std::string& modelPath)
+    {
+        tinyobj::attrib_t attrib;
+        std::vector<tinyobj::shape_t> shapes;
+        std::vector<tinyobj::material_t> materials;
+        std::string warn, err;
+
+        bool loaded = tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, modelPath.c_str());
+        AST_ASSERT(loaded, "Failed to load model.");
+
+        std::unordered_map<Vertex, uint32_t> uniqueVertices;
+        for (auto& shape : shapes)
+        {
+            for (auto& index : shape.mesh.indices)
+            {
+                Vertex vertex{
+                    .position = {
+                        attrib.vertices[3 * index.vertex_index + 0],
+                        attrib.vertices[3 * index.vertex_index + 1],
+                        attrib.vertices[3 * index.vertex_index + 2]
+                    },
+                    .color = { 1.0f, 1.0f, 1.0f, 1.0f },
+                    .texCoord = {
+                        attrib.texcoords[2 * index.texcoord_index + 0],
+                        1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
+                    }
+                };
+
+                if (uniqueVertices.find(vertex) == uniqueVertices.end())
+                {
+                    uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
+                    vertices.push_back(vertex);
+                }
+
+                indices.push_back(uniqueVertices[vertex]);
+            }
+        }
+
+        AST_INFO("Loaded model: {0}", modelPath);
+        AST_INFO("Vertices: {0}, Indices: {1}", vertices.size(), indices.size());
     }
 }

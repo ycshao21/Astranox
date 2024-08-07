@@ -10,6 +10,20 @@
 
 namespace Astranox
 {
+    struct Vertex
+    {
+        glm::vec3 position;
+        glm::vec4 color;
+        glm::vec2 texCoord;
+
+        bool operator==(const Vertex& other) const
+        {
+            return position == other.position
+                && color == other.color
+                && texCoord == other.texCoord;
+        }
+    };
+
     class VulkanSwapchain: public RefCounted
     {
     public:
@@ -95,6 +109,8 @@ namespace Astranox
             uint32_t width,
             uint32_t height
         );
+
+        void loadModel(const std::string& modelPath);
         
     private:
         Ref<VulkanDevice> m_Device = nullptr;
@@ -143,24 +159,26 @@ namespace Astranox
         VkImageView m_TextureImageView;
         VkSampler m_TextureSampler;
 
-        mutable std::vector<float> vertices = {
-             0.5f,  0.5f, 0.5f,    0.1f, 0.9f, 0.1f, 1.0f,    1.0f, 0.0f,
-            -0.5f,  0.5f, 0.5f,    0.9f, 0.1f, 0.1f, 1.0f,    0.0f, 0.0f,
-            -0.5f, -0.5f, 0.5f,    0.9f, 0.1f, 0.1f, 1.0f,    0.0f, 1.0f,
-             0.5f, -0.5f, 0.5f,    0.9f, 0.9f, 0.9f, 1.0f,    1.0f, 1.0f,
+        //mutable std::vector<float> vertices = {
+        //     0.5f,  0.5f, 0.5f,    0.1f, 0.9f, 0.1f, 1.0f,    1.0f, 0.0f,
+        //    -0.5f,  0.5f, 0.5f,    0.9f, 0.1f, 0.1f, 1.0f,    0.0f, 0.0f,
+        //    -0.5f, -0.5f, 0.5f,    0.9f, 0.1f, 0.1f, 1.0f,    0.0f, 1.0f,
+        //     0.5f, -0.5f, 0.5f,    0.9f, 0.9f, 0.9f, 1.0f,    1.0f, 1.0f,
 
-             0.5f,  0.5f, -0.5f,    0.1f, 0.9f, 0.1f, 1.0f,    1.0f, 0.0f,
-            -0.5f,  0.5f, -0.5f,    0.9f, 0.1f, 0.1f, 1.0f,    0.0f, 0.0f,
-            -0.5f, -0.5f, -0.5f,    0.9f, 0.1f, 0.1f, 1.0f,    0.0f, 1.0f,
-             0.5f, -0.5f, -0.5f,    0.9f, 0.9f, 0.9f, 1.0f,    1.0f, 1.0f,
-        };
+        //     0.5f,  0.5f, -0.5f,    0.1f, 0.9f, 0.1f, 1.0f,    1.0f, 0.0f,
+        //    -0.5f,  0.5f, -0.5f,    0.9f, 0.1f, 0.1f, 1.0f,    0.0f, 0.0f,
+        //    -0.5f, -0.5f, -0.5f,    0.9f, 0.1f, 0.1f, 1.0f,    0.0f, 1.0f,
+        //     0.5f, -0.5f, -0.5f,    0.9f, 0.9f, 0.9f, 1.0f,    1.0f, 1.0f,
+        //};
+        std::vector<Vertex> vertices;
         VkBuffer m_VertexBuffer = VK_NULL_HANDLE;
         VkDeviceMemory m_VertexBufferMemory = VK_NULL_HANDLE;
 
-        mutable std::vector<uint16_t> indices = {
-            0, 1, 2, 2, 3, 0,
-            4, 5, 6, 6, 7, 4,
-        };
+        //mutable std::vector<uint16_t> indices = {
+        //    0, 1, 2, 2, 3, 0,
+        //    4, 5, 6, 6, 7, 4,
+        //};
+        std::vector<uint32_t> indices;
         VkBuffer m_IndexBuffer = VK_NULL_HANDLE;
         VkDeviceMemory m_IndexBufferMemory = VK_NULL_HANDLE;
 
