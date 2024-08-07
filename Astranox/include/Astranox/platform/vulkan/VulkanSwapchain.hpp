@@ -63,6 +63,37 @@ namespace Astranox
         );
 
         void createDescriptorPool();
+        void createImage(
+            uint32_t width,
+            uint32_t height,
+            VkFormat format,
+            VkImageTiling tiling,
+            VkImageUsageFlags usage,
+            VkMemoryPropertyFlags properties,
+            VkImage& image,
+            VkDeviceMemory& imageMemory
+        );
+        VkImageView createImageView(
+            VkImage image,
+            VkFormat format
+        );
+
+        void beginOneTimeCommandBuffer(VkCommandBuffer& commandBuffer);
+        void endOneTimeCommandBuffer(VkCommandBuffer commandBuffer);
+
+        void transitionImageLayout(
+            VkImage image,
+            VkFormat format,
+            VkImageLayout oldLayout,
+            VkImageLayout newLayout
+        );
+
+        void copyBufferToImage(
+            VkBuffer buffer,
+            VkImage image,
+            uint32_t width,
+            uint32_t height
+        );
         
     private:
         Ref<VulkanDevice> m_Device = nullptr;
@@ -102,11 +133,16 @@ namespace Astranox
 		Ref<VulkanShader> m_Shader = nullptr;
 		Ref<VulkanPipeline> m_Pipeline = nullptr;
 
+        VkImage m_TextureImage;
+        VkDeviceMemory m_TextureImageMemory;
+        VkImageView m_TextureImageView;
+        VkSampler m_TextureSampler;
+
         mutable std::vector<float> vertices = {
-             0.5f,  0.5f, 0.0f, 0.1f, 0.9f, 0.1f, 1.0f,
-            -0.5f,  0.5f, 0.0f, 0.9f, 0.1f, 0.1f, 1.0f,
-            -0.5f, -0.5f, 0.0f, 0.9f, 0.1f, 0.1f, 1.0f,
-             0.5f, -0.5f, 0.0f, 0.9f, 0.9f, 0.9f, 1.0f,
+             0.5f,  0.5f, 0.0f,    0.1f, 0.9f, 0.1f, 1.0f,    1.0f, 0.0f,
+            -0.5f,  0.5f, 0.0f,    0.9f, 0.1f, 0.1f, 1.0f,    0.0f, 0.0f,
+            -0.5f, -0.5f, 0.0f,    0.9f, 0.1f, 0.1f, 1.0f,    0.0f, 1.0f,
+             0.5f, -0.5f, 0.0f,    0.9f, 0.9f, 0.9f, 1.0f,    1.0f, 1.0f
         };
         VkBuffer m_VertexBuffer = VK_NULL_HANDLE;
         VkDeviceMemory m_VertexBufferMemory = VK_NULL_HANDLE;

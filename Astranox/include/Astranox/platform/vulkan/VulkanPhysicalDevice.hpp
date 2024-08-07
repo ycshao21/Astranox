@@ -35,6 +35,8 @@ namespace Astranox
         const QueueFamilyIndices& getQueueIndices() const { return m_QueueFamilyIndices; }
         const VkPhysicalDeviceFeatures& getFeatures() const { return m_Features; }
         const std::vector<VkQueueFamilyProperties>& getQueueFamilyProperties() const { return m_QueueFamilyProperties; }
+        const VkPhysicalDeviceProperties& getProperties() const { return m_Properties; }
+        const VkPhysicalDeviceMemoryProperties& getMemoryProperties() const { return m_MemoryProperties; }
 
         bool isExtentionSupported(const std::string& extensionName) const;
 

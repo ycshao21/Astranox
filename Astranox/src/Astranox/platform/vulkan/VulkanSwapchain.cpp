@@ -10,6 +10,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <chrono>
+#include "stb_image/stb_image.h"
 
 namespace Astranox
 {
@@ -157,13 +158,89 @@ namespace Astranox
 
         if (!m_Shader)
         {
-            std::string vertexShaderPath = "../Astranox-Rasterization/assets/shaders/uniform-vert.spv";
-            std::string fragmentShaderPath = "../Astranox-Rasterization/assets/shaders/uniform-frag.spv";
+            std::string vertexShaderPath = "../Astranox-Rasterization/assets/shaders/square-vert.spv";
+            std::string fragmentShaderPath = "../Astranox-Rasterization/assets/shaders/square-frag.spv";
             m_Shader = VulkanShader::create(vertexShaderPath, fragmentShaderPath);
             m_Shader->createDescriptorSetLayout();
 
             m_Pipeline = Ref<VulkanPipeline>::create(m_Shader);
             m_Pipeline->createPipeline();
+
+            // Texture
+            {
+                // Texture image >>>
+                std::string texturePath = "../Astranox-Rasterization/assets/textures/statue.jpg";
+                int texWidth, texHeight, texChannels;
+                stbi_uc* pixels = stbi_load(texturePath.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+                AST_CORE_ASSERT(pixels, "Failed to load texture image");
+
+                VkDeviceSize imageSize = texWidth * texHeight * 4;
+
+                VkBuffer stagingBuffer;
+                VkDeviceMemory stagingBufferMemory;
+                createBuffer(
+                    imageSize,
+                    VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                    stagingBuffer,
+                    stagingBufferMemory
+                );
+
+                void* data;
+                VK_CHECK(::vkMapMemory(m_Device->getRaw(), stagingBufferMemory, 0, imageSize, 0, &data));
+                memcpy(data, pixels, static_cast<size_t>(imageSize));
+                ::vkUnmapMemory(m_Device->getRaw(), stagingBufferMemory);
+
+                stbi_image_free(pixels);
+
+                createImage(
+                    texWidth,
+                    texHeight,
+                    VK_FORMAT_R8G8B8A8_SRGB,
+                    VK_IMAGE_TILING_OPTIMAL,
+                    VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                    m_TextureImage,
+                    m_TextureImageMemory
+                );
+
+                transitionImageLayout(m_TextureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+                copyBufferToImage(stagingBuffer, m_TextureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
+                transitionImageLayout(m_TextureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+                ::vkDestroyBuffer(m_Device->getRaw(), stagingBuffer, nullptr);
+                ::vkFreeMemory(m_Device->getRaw(), stagingBufferMemory, nullptr);
+                // <<< Texture image
+
+                // Texture image view >>>
+                m_TextureImageView = createImageView(
+                    m_TextureImage,
+                    VK_FORMAT_R8G8B8A8_SRGB
+                );
+                // <<< Texture image view
+
+                // Texture sampler >>>
+                VkSamplerCreateInfo samplerInfo{
+                    .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+                    .magFilter = VK_FILTER_LINEAR,
+                    .minFilter = VK_FILTER_LINEAR,
+                    .mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR,
+                    .addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+                    .addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+                    .addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+                    .mipLodBias = 0.0f,
+                    .anisotropyEnable = VK_TRUE,
+                    .maxAnisotropy = m_Device->getPhysicalDevice()->getProperties().limits.maxSamplerAnisotropy,
+                    .compareEnable = VK_FALSE,
+                    .compareOp = VK_COMPARE_OP_ALWAYS,
+                    .minLod = 0.0f,
+                    .maxLod = 0.0f,
+                    .borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK,
+                    .unnormalizedCoordinates = VK_FALSE,
+                };
+                VK_CHECK(::vkCreateSampler(m_Device->getRaw(), &samplerInfo, nullptr, &m_TextureSampler));
+                // <<< Texture sampler
+            }
 
             // Vertex buffer
             {
@@ -256,6 +333,7 @@ namespace Astranox
 
             createDescriptorPool();
 
+            // Descriptor sets >>>
             std::vector<VkDescriptorSetLayout> layouts(m_MaxFramesInFlight, m_Shader->getDescriptorSetLayouts()[0]);
             VkDescriptorSetAllocateInfo allocInfo{
                 .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
@@ -269,26 +347,56 @@ namespace Astranox
 
             for (size_t i = 0; i < m_MaxFramesInFlight; i++)
             {
+                // Uniform buffer
                 VkDescriptorBufferInfo bufferInfo{
                     .buffer = m_UniformBuffers[i],
                     .offset = 0,
                     .range = sizeof(UniformBufferObject)
                 };
 
-                VkWriteDescriptorSet descriptorWrite{
-                    .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                    .dstSet = m_DescriptorSets[i],
-                    .dstBinding = 0,
-                    .dstArrayElement = 0,
-                    .descriptorCount = 1,
-                    .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                    .pImageInfo = nullptr,
-                    .pBufferInfo = &bufferInfo,
-                    .pTexelBufferView = nullptr
+                // Sampler
+                VkDescriptorImageInfo imageInfo{
+                    .sampler = m_TextureSampler,
+                    .imageView = m_TextureImageView,
+                    .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
                 };
 
-                ::vkUpdateDescriptorSets(m_Device->getRaw(), 1, &descriptorWrite, 0, nullptr);
+                std::vector<VkWriteDescriptorSet> descriptorWrites{
+                    // Uniform buffer
+                    {
+                        .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                        .dstSet = m_DescriptorSets[i],
+                        .dstBinding = 0,
+                        .dstArrayElement = 0,
+                        .descriptorCount = 1,
+                        .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                        .pImageInfo = nullptr,
+                        .pBufferInfo = &bufferInfo,
+                        .pTexelBufferView = nullptr
+                    },
+                    // Sampler
+                    {
+                        .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                        .dstSet = m_DescriptorSets[i],
+                        .dstBinding = 1,
+                        .dstArrayElement = 0,
+                        .descriptorCount = 1,
+                        .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                        .pImageInfo = &imageInfo,
+                        .pBufferInfo = nullptr,
+                        .pTexelBufferView = nullptr
+                    }
+                };
+
+                ::vkUpdateDescriptorSets(
+                    m_Device->getRaw(),
+                    static_cast<uint32_t>(descriptorWrites.size()),
+                    descriptorWrites.data(),
+                    0,
+                    nullptr
+                );
             }
+            // <<< Descriptor sets
         }
     }
 
@@ -308,6 +416,11 @@ namespace Astranox
             ::vkDestroyBuffer(m_Device->getRaw(), m_UniformBuffers[i], nullptr);
             ::vkFreeMemory(m_Device->getRaw(), m_UniformBuffersMemory[i], nullptr);
         }
+
+        ::vkDestroySampler(m_Device->getRaw(), m_TextureSampler, nullptr);
+        ::vkDestroyImageView(m_Device->getRaw(), m_TextureImageView, nullptr);
+        ::vkDestroyImage(m_Device->getRaw(), m_TextureImage, nullptr);
+        ::vkFreeMemory(m_Device->getRaw(), m_TextureImageMemory, nullptr);
 
         for (size_t i = 0; i < m_MaxFramesInFlight; i++)
         {
@@ -565,31 +678,10 @@ namespace Astranox
 
         // Create image views >>>
         m_Images.resize(imageCount);
-
-        VkImageViewCreateInfo createInfo{
-            .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-            .viewType = VK_IMAGE_VIEW_TYPE_2D,
-            .format = m_ImageFormat,
-            .components = {
-                .r = VK_COMPONENT_SWIZZLE_IDENTITY,
-                .g = VK_COMPONENT_SWIZZLE_IDENTITY,
-                .b = VK_COMPONENT_SWIZZLE_IDENTITY,
-                .a = VK_COMPONENT_SWIZZLE_IDENTITY
-            },
-            .subresourceRange = {
-                .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-                .baseMipLevel = 0,
-                .levelCount = 1,
-                .baseArrayLayer = 0,
-                .layerCount = 1
-            }
-        };
-
         for (size_t i = 0; i < m_Images.size(); i++)
         {
             m_Images[i].image = images[i];
-            createInfo.image = images[i];
-            VK_CHECK(::vkCreateImageView(m_Device->getRaw(), &createInfo, nullptr, &m_Images[i].imageView));
+            m_Images[i].imageView = createImageView(images[i], m_ImageFormat);
         }
         // <<< Create image views
     }
@@ -719,9 +811,7 @@ namespace Astranox
         VkMemoryRequirements memoryRequirements;
         ::vkGetBufferMemoryRequirements(m_Device->getRaw(), buffer, &memoryRequirements);
 
-        VkPhysicalDeviceMemoryProperties memoryProperties;
-        ::vkGetPhysicalDeviceMemoryProperties(m_Device->getPhysicalDevice()->getRaw(), &memoryProperties);
-         
+        auto& memoryProperties = m_Device->getPhysicalDevice()->getMemoryProperties();
         uint32_t memoryTypeIndex = 0;
         for (; memoryTypeIndex < memoryProperties.memoryTypeCount; memoryTypeIndex++)
         {
@@ -749,13 +839,7 @@ namespace Astranox
     )
     {
         VkCommandBuffer commandBuffer = m_CommandPool->allocateCommandBuffer();
-
-        VkCommandBufferBeginInfo beginInfo{
-            .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-            .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-        };
-
-        VK_CHECK(::vkBeginCommandBuffer(commandBuffer, &beginInfo));
+        beginOneTimeCommandBuffer(commandBuffer);
 
         VkBufferCopy copyRegion{
             .srcOffset = 0,
@@ -764,6 +848,118 @@ namespace Astranox
         };
         ::vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
 
+        endOneTimeCommandBuffer(commandBuffer);
+    }
+
+    void VulkanSwapchain::createDescriptorPool()
+    {
+        std::vector<VkDescriptorPoolSize> poolSizes{
+            // Uniform buffer
+            {
+                .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                .descriptorCount = static_cast<uint32_t>(m_MaxFramesInFlight)
+            },
+            // Sampler
+            {
+                .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                .descriptorCount = static_cast<uint32_t>(m_MaxFramesInFlight)
+            }
+        };
+
+        VkDescriptorPoolCreateInfo poolInfo{
+            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+            .maxSets = static_cast<uint32_t>(m_MaxFramesInFlight),
+            .poolSizeCount = static_cast<uint32_t>(poolSizes.size()),
+            .pPoolSizes = poolSizes.data()
+        };
+
+        VK_CHECK(::vkCreateDescriptorPool(m_Device->getRaw(), &poolInfo, nullptr, &m_DescriptorPool));
+    }
+
+    void VulkanSwapchain::createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory)
+    {
+        VkImageCreateInfo imageInfo{
+            .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+            .flags = 0,
+            .imageType = VK_IMAGE_TYPE_2D,
+            .format = format,
+            .extent = {
+                .width = width,
+                .height = height,
+                .depth = 1
+            },
+            .mipLevels = 1,
+            .arrayLayers = 1,
+            .samples = VK_SAMPLE_COUNT_1_BIT,
+            .tiling = tiling,
+            .usage = usage,
+            .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+            .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+        };
+        VK_CHECK(::vkCreateImage(m_Device->getRaw(), &imageInfo, nullptr, &m_TextureImage));
+
+        VkMemoryRequirements memoryRequirements;
+        ::vkGetImageMemoryRequirements(m_Device->getRaw(), m_TextureImage, &memoryRequirements);
+
+        auto& memoryProperties = m_Device->getPhysicalDevice()->getMemoryProperties();
+        uint32_t memoryTypeIndex = 0;
+        for (; memoryTypeIndex < memoryProperties.memoryTypeCount; memoryTypeIndex++)
+        {
+            if ((memoryRequirements.memoryTypeBits & BIT(memoryTypeIndex))
+                && memoryProperties.memoryTypes[memoryTypeIndex].propertyFlags & properties)
+            {
+                break;
+            }
+        }
+        AST_CORE_ASSERT(memoryTypeIndex < memoryProperties.memoryTypeCount, "Failed to find suitable memory type");
+
+        VkMemoryAllocateInfo allocateInfo{
+            .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+            .allocationSize = memoryRequirements.size,
+            .memoryTypeIndex = memoryTypeIndex
+        };
+        VK_CHECK(::vkAllocateMemory(m_Device->getRaw(), &allocateInfo, nullptr, &imageMemory));
+
+        VK_CHECK(::vkBindImageMemory(m_Device->getRaw(), image, imageMemory, 0));
+    }
+
+    VkImageView VulkanSwapchain::createImageView(VkImage image, VkFormat format)
+    {
+        VkImageView imageView;
+        VkImageViewCreateInfo viewInfo{
+            .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+            .image = image,
+            .viewType = VK_IMAGE_VIEW_TYPE_2D,
+            .format = format,
+            .components = {
+                .r = VK_COMPONENT_SWIZZLE_IDENTITY,
+                .g = VK_COMPONENT_SWIZZLE_IDENTITY,
+                .b = VK_COMPONENT_SWIZZLE_IDENTITY,
+                .a = VK_COMPONENT_SWIZZLE_IDENTITY
+            },
+            .subresourceRange = {
+                .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                .baseMipLevel = 0,
+                .levelCount = 1,
+                .baseArrayLayer = 0,
+                .layerCount = 1
+            }
+        };
+        VK_CHECK(::vkCreateImageView(m_Device->getRaw(), &viewInfo, nullptr, &imageView));
+        return imageView;
+    }
+
+    void VulkanSwapchain::beginOneTimeCommandBuffer(VkCommandBuffer& commandBuffer)
+    {
+        VkCommandBufferBeginInfo beginInfo{
+            .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+            .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+        };
+        VK_CHECK(::vkBeginCommandBuffer(commandBuffer, &beginInfo));
+    }
+
+    void VulkanSwapchain::endOneTimeCommandBuffer(VkCommandBuffer commandBuffer)
+    {
         VK_CHECK(::vkEndCommandBuffer(commandBuffer));
 
         VkSubmitInfo submitInfo{
@@ -778,20 +974,93 @@ namespace Astranox
         ::vkFreeCommandBuffers(m_Device->getRaw(), m_CommandPool->getGraphicsCommandPool(), 1, &commandBuffer);
     }
 
-    void VulkanSwapchain::createDescriptorPool()
+    void VulkanSwapchain::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout)
     {
-        VkDescriptorPoolSize poolSize{
-            .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            .descriptorCount = static_cast<uint32_t>(m_MaxFramesInFlight)
+        VkCommandBuffer commandBuffer = m_CommandPool->allocateCommandBuffer();
+        beginOneTimeCommandBuffer(commandBuffer);
+
+        VkImageMemoryBarrier barrier{
+            .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+            .srcAccessMask = 0,
+            .dstAccessMask = 0,
+            .oldLayout = oldLayout,
+            .newLayout = newLayout,
+            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .image = image,
+            .subresourceRange = {
+                .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                .baseMipLevel = 0,
+                .levelCount = 1,
+                .baseArrayLayer = 0,
+                .layerCount = 1
+            }
         };
 
-        VkDescriptorPoolCreateInfo poolInfo{
-            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-            .maxSets = static_cast<uint32_t>(m_MaxFramesInFlight),
-            .poolSizeCount = 1,
-            .pPoolSizes = &poolSize
+        VkPipelineStageFlags sourceStage;
+        VkPipelineStageFlags destinationStage;
+
+        if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+        {
+            barrier.srcAccessMask = 0;
+            barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+            sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+            destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+        }
+        else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+        {
+            barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+            barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+            sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+            destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+        }
+        else
+        {
+            AST_CORE_ASSERT(false, "Unsupported layout transition");
+        }
+
+        ::vkCmdPipelineBarrier(
+            commandBuffer,
+            sourceStage, destinationStage,
+            0,
+            0, nullptr,
+            0, nullptr,
+            1, &barrier
+        );
+
+        endOneTimeCommandBuffer(commandBuffer);
+    }
+
+    void VulkanSwapchain::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height)
+    {
+        VkCommandBuffer commandBuffer = m_CommandPool->allocateCommandBuffer();
+        beginOneTimeCommandBuffer(commandBuffer);
+
+        VkBufferImageCopy region{
+            .bufferOffset = 0,
+            .bufferRowLength = 0,
+            .bufferImageHeight = 0,
+            .imageSubresource = {
+                .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                .mipLevel = 0,
+                .baseArrayLayer = 0,
+                .layerCount = 1
+            },
+            .imageOffset = { 0, 0, 0 },
+            .imageExtent = { width, height, 1 }
         };
 
-        VK_CHECK(::vkCreateDescriptorPool(m_Device->getRaw(), &poolInfo, nullptr, &m_DescriptorPool));
+        ::vkCmdCopyBufferToImage(
+            commandBuffer,
+            buffer,
+            image,
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            1,
+            &region
+        );
+
+        endOneTimeCommandBuffer(commandBuffer);
     }
 }

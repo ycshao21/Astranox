@@ -39,6 +39,9 @@ dependencies = {
 	glm = {
 		includeDir = "%{wks.location}/Astranox/vendor/glm",
 	},
+	stb_image = {
+		includeDir = "%{wks.location}/Astranox/vendor/stb_image",
+	},
 }
 
 

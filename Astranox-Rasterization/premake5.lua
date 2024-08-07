@@ -17,6 +17,7 @@ project "Astranox-Rasterization"
 		"include/",
 		"../Astranox/include",
 		"../Astranox/vendor/",
+		"%{dependencies.stb_image.includeDir}",
 	}
 
 	includeDependencies()

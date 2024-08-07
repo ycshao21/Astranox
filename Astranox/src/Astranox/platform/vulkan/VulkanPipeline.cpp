@@ -44,7 +44,7 @@ namespace Astranox
         std::vector<VkVertexInputBindingDescription> vertexInputBindings {
             {
                 .binding = 0,
-                .stride = 7 * sizeof(float),
+                .stride = 9 * sizeof(float),  // Position(3) + Color(4) + TexCoord(2)
                 .inputRate = VK_VERTEX_INPUT_RATE_VERTEX,
             }
         };
@@ -63,6 +63,13 @@ namespace Astranox
                 .binding = 0,
                 .format = VK_FORMAT_R32G32B32A32_SFLOAT,
                 .offset = 3 * sizeof(float)
+            },
+            // TexCoord
+            {
+                .location = 2,
+                .binding = 0,
+                .format = VK_FORMAT_R32G32_SFLOAT,
+                .offset = 7 * sizeof(float)
             }
         };
 
