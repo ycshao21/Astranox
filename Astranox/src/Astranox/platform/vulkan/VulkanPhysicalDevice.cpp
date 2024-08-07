@@ -84,6 +84,25 @@ namespace Astranox
         // <<< Get supported layers
 
         findQueueFamilies();
+
+        // Find depth format >>>
+        std::vector<VkFormat> depthFormats = {
+            VK_FORMAT_D32_SFLOAT,
+            VK_FORMAT_D32_SFLOAT_S8_UINT,
+            VK_FORMAT_D24_UNORM_S8_UINT
+        };
+
+        for (auto format : depthFormats)
+        {
+            VkFormatProperties formatProperties;
+            vkGetPhysicalDeviceFormatProperties(m_PhysicalDevice, format, &formatProperties);
+
+            if (formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)
+            {
+                m_DepthFormat = format;
+                break;
+            }
+        }
     }
 
     bool VulkanPhysicalDevice::isExtentionSupported(const std::string& extensionName) const

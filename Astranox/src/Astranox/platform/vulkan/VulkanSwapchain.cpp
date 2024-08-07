@@ -131,6 +131,29 @@ namespace Astranox
         }
         getSwapchainImages();
 
+        if (m_DepthImage)
+        {
+            ::vkDestroyImageView(m_Device->getRaw(), m_DepthImageView, nullptr);
+            ::vkDestroyImage(m_Device->getRaw(), m_DepthImage, nullptr);
+            ::vkFreeMemory(m_Device->getRaw(), m_DepthImageMemory, nullptr);
+        }
+        createImage(
+            m_SwapchainExtent.width,
+            m_SwapchainExtent.height,
+            physicalDevice->getDepthFormat(),
+            VK_IMAGE_TILING_OPTIMAL,
+            VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+            m_DepthImage,
+            m_DepthImageMemory
+        );
+
+        m_DepthImageView = createImageView(
+            m_DepthImage,
+            physicalDevice->getDepthFormat(),
+            VK_IMAGE_ASPECT_DEPTH_BIT
+        );
+
         if (!m_RenderPass)
         {
             createRenderPass();
@@ -215,7 +238,8 @@ namespace Astranox
                 // Texture image view >>>
                 m_TextureImageView = createImageView(
                     m_TextureImage,
-                    VK_FORMAT_R8G8B8A8_SRGB
+                    VK_FORMAT_R8G8B8A8_SRGB,
+                    VK_IMAGE_ASPECT_COLOR_BIT
                 );
                 // <<< Texture image view
 
@@ -422,6 +446,10 @@ namespace Astranox
         ::vkDestroyImage(m_Device->getRaw(), m_TextureImage, nullptr);
         ::vkFreeMemory(m_Device->getRaw(), m_TextureImageMemory, nullptr);
 
+        ::vkDestroyImageView(m_Device->getRaw(), m_DepthImageView, nullptr);
+        ::vkDestroyImage(m_Device->getRaw(), m_DepthImage, nullptr);
+        ::vkFreeMemory(m_Device->getRaw(), m_DepthImageMemory, nullptr);
+
         for (size_t i = 0; i < m_MaxFramesInFlight; i++)
         {
             ::vkDestroySemaphore(m_Device->getRaw(), m_ImageAvailableSemaphores[i], nullptr);
@@ -474,7 +502,9 @@ namespace Astranox
         VK_CHECK(::vkBeginCommandBuffer(getCurrentCommandBuffer(), &beginInfo));
         // <<< Begin command buffer
 
-        VkClearValue clearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
+        std::array<VkClearValue, 2> clearValues;
+        clearValues[0].color = { 0.0f, 0.0f, 0.0f, 1.0f };
+        clearValues[1].depthStencil = { 1.0f, 0u };
 
         // Begin render pass >>>
         VkRenderPassBeginInfo renderPassInfo{
@@ -486,8 +516,8 @@ namespace Astranox
                 .offset = { 0, 0 },
                 .extent = m_SwapchainExtent
             },
-            .clearValueCount = 1,
-            .pClearValues = &clearColor
+            .clearValueCount = static_cast<uint32_t>(clearValues.size()),
+            .pClearValues = clearValues.data()
         };
         ::vkCmdBeginRenderPass(getCurrentCommandBuffer(), &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
         // <<< Begin render pass
@@ -681,7 +711,11 @@ namespace Astranox
         for (size_t i = 0; i < m_Images.size(); i++)
         {
             m_Images[i].image = images[i];
-            m_Images[i].imageView = createImageView(images[i], m_ImageFormat);
+            m_Images[i].imageView = createImageView(
+                images[i],
+                m_ImageFormat,
+                VK_IMAGE_ASPECT_COLOR_BIT
+            );
         }
         // <<< Create image views
     }
@@ -705,6 +739,22 @@ namespace Astranox
             .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
         };
 
+        VkAttachmentDescription depthAttachment{
+            .format = m_Device->getPhysicalDevice()->getDepthFormat(),
+            .samples = VK_SAMPLE_COUNT_1_BIT,
+            .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+            .storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+            .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+            .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+            .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+            .finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
+        };
+
+        VkAttachmentReference depthAttachmentRef{
+            .attachment = 1,
+            .layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
+        };
+
         VkSubpassDescription subpass{
             .flags = 0,
             .pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -713,7 +763,7 @@ namespace Astranox
             .colorAttachmentCount = 1,
             .pColorAttachments = &colorAttachmentRef,
             .pResolveAttachments = nullptr,
-            .pDepthStencilAttachment = nullptr,
+            .pDepthStencilAttachment = &depthAttachmentRef,
             .preserveAttachmentCount = 0,
             .pPreserveAttachments = nullptr
         };
@@ -721,16 +771,18 @@ namespace Astranox
         VkSubpassDependency dependency{
             .srcSubpass = VK_SUBPASS_EXTERNAL,
             .dstSubpass = 0,
-            .srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-            .dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-            .srcAccessMask = 0,
-            .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+            .srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+            .dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
+            .srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+            .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
         };
+
+        std::array<VkAttachmentDescription, 2> attachments = { colorAttachment, depthAttachment };
 
         VkRenderPassCreateInfo renderPassInfo{
             .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-            .attachmentCount = 1,
-            .pAttachments = &colorAttachment,
+            .attachmentCount = static_cast<uint32_t>(attachments.size()),
+            .pAttachments = attachments.data(),
             .subpassCount = 1,
             .pSubpasses = &subpass,
             .dependencyCount = 1,
@@ -745,10 +797,7 @@ namespace Astranox
 
         VkFramebufferCreateInfo createInfo = {
             .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-            .pNext = nullptr,
-            .flags = 0,
             .renderPass = m_RenderPass,
-            .attachmentCount = 1,
             .width = m_SwapchainExtent.width,
             .height = m_SwapchainExtent.height,
             .layers = 1
@@ -756,7 +805,10 @@ namespace Astranox
 
         for (size_t i = 0; i < m_Framebuffers.size(); ++i)
         {
-            createInfo.pAttachments = &m_Images[i].imageView;
+            std::array<VkImageView, 2> attachments = { m_Images[i].imageView, m_DepthImageView };
+
+            createInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+            createInfo.pAttachments = attachments.data();
 
             VK_CHECK(::vkCreateFramebuffer(
                 m_Device->getRaw(),
@@ -896,10 +948,10 @@ namespace Astranox
             .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
             .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
         };
-        VK_CHECK(::vkCreateImage(m_Device->getRaw(), &imageInfo, nullptr, &m_TextureImage));
+        VK_CHECK(::vkCreateImage(m_Device->getRaw(), &imageInfo, nullptr, &image));
 
         VkMemoryRequirements memoryRequirements;
-        ::vkGetImageMemoryRequirements(m_Device->getRaw(), m_TextureImage, &memoryRequirements);
+        ::vkGetImageMemoryRequirements(m_Device->getRaw(), image, &memoryRequirements);
 
         auto& memoryProperties = m_Device->getPhysicalDevice()->getMemoryProperties();
         uint32_t memoryTypeIndex = 0;
@@ -923,7 +975,7 @@ namespace Astranox
         VK_CHECK(::vkBindImageMemory(m_Device->getRaw(), image, imageMemory, 0));
     }
 
-    VkImageView VulkanSwapchain::createImageView(VkImage image, VkFormat format)
+    VkImageView VulkanSwapchain::createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags)
     {
         VkImageView imageView;
         VkImageViewCreateInfo viewInfo{
@@ -938,7 +990,7 @@ namespace Astranox
                 .a = VK_COMPONENT_SWIZZLE_IDENTITY
             },
             .subresourceRange = {
-                .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                .aspectMask = aspectFlags,
                 .baseMipLevel = 0,
                 .levelCount = 1,
                 .baseArrayLayer = 0,

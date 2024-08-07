@@ -75,7 +75,8 @@ namespace Astranox
         );
         VkImageView createImageView(
             VkImage image,
-            VkFormat format
+            VkFormat format,
+            VkImageAspectFlags aspectFlags
         );
 
         void beginOneTimeCommandBuffer(VkCommandBuffer& commandBuffer);
@@ -133,22 +134,32 @@ namespace Astranox
 		Ref<VulkanShader> m_Shader = nullptr;
 		Ref<VulkanPipeline> m_Pipeline = nullptr;
 
+        VkImage m_DepthImage = VK_NULL_HANDLE;
+        VkDeviceMemory m_DepthImageMemory = VK_NULL_HANDLE;
+        VkImageView m_DepthImageView = VK_NULL_HANDLE;
+
         VkImage m_TextureImage;
         VkDeviceMemory m_TextureImageMemory;
         VkImageView m_TextureImageView;
         VkSampler m_TextureSampler;
 
         mutable std::vector<float> vertices = {
-             0.5f,  0.5f, 0.0f,    0.1f, 0.9f, 0.1f, 1.0f,    1.0f, 0.0f,
-            -0.5f,  0.5f, 0.0f,    0.9f, 0.1f, 0.1f, 1.0f,    0.0f, 0.0f,
-            -0.5f, -0.5f, 0.0f,    0.9f, 0.1f, 0.1f, 1.0f,    0.0f, 1.0f,
-             0.5f, -0.5f, 0.0f,    0.9f, 0.9f, 0.9f, 1.0f,    1.0f, 1.0f
+             0.5f,  0.5f, 0.5f,    0.1f, 0.9f, 0.1f, 1.0f,    1.0f, 0.0f,
+            -0.5f,  0.5f, 0.5f,    0.9f, 0.1f, 0.1f, 1.0f,    0.0f, 0.0f,
+            -0.5f, -0.5f, 0.5f,    0.9f, 0.1f, 0.1f, 1.0f,    0.0f, 1.0f,
+             0.5f, -0.5f, 0.5f,    0.9f, 0.9f, 0.9f, 1.0f,    1.0f, 1.0f,
+
+             0.5f,  0.5f, -0.5f,    0.1f, 0.9f, 0.1f, 1.0f,    1.0f, 0.0f,
+            -0.5f,  0.5f, -0.5f,    0.9f, 0.1f, 0.1f, 1.0f,    0.0f, 0.0f,
+            -0.5f, -0.5f, -0.5f,    0.9f, 0.1f, 0.1f, 1.0f,    0.0f, 1.0f,
+             0.5f, -0.5f, -0.5f,    0.9f, 0.9f, 0.9f, 1.0f,    1.0f, 1.0f,
         };
         VkBuffer m_VertexBuffer = VK_NULL_HANDLE;
         VkDeviceMemory m_VertexBufferMemory = VK_NULL_HANDLE;
 
         mutable std::vector<uint16_t> indices = {
-            0, 1, 2, 2, 3, 0
+            0, 1, 2, 2, 3, 0,
+            4, 5, 6, 6, 7, 4,
         };
         VkBuffer m_IndexBuffer = VK_NULL_HANDLE;
         VkDeviceMemory m_IndexBufferMemory = VK_NULL_HANDLE;

@@ -37,6 +37,7 @@ namespace Astranox
         const std::vector<VkQueueFamilyProperties>& getQueueFamilyProperties() const { return m_QueueFamilyProperties; }
         const VkPhysicalDeviceProperties& getProperties() const { return m_Properties; }
         const VkPhysicalDeviceMemoryProperties& getMemoryProperties() const { return m_MemoryProperties; }
+        VkFormat getDepthFormat() const { return m_DepthFormat; }
 
         bool isExtentionSupported(const std::string& extensionName) const;
 
@@ -52,6 +53,8 @@ namespace Astranox
 
         std::vector<VkQueueFamilyProperties> m_QueueFamilyProperties;
         QueueFamilyIndices m_QueueFamilyIndices;
+
+        VkFormat m_DepthFormat = VK_FORMAT_UNDEFINED;
 
         std::set<std::string> m_SupportedExtensions;
         std::vector<VkLayerProperties> m_LayerProperties;
