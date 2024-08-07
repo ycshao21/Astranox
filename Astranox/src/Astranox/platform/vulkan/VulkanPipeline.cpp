@@ -105,7 +105,7 @@ namespace Astranox
             .rasterizerDiscardEnable = VK_FALSE,
             .polygonMode = polygonMode,
             .cullMode = cullMode,
-            .frontFace = VK_FRONT_FACE_CLOCKWISE,
+            .frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE,
             .depthBiasEnable = VK_FALSE,
             .depthBiasConstantFactor = 0.0f,
             .depthBiasClamp = 0.0f,

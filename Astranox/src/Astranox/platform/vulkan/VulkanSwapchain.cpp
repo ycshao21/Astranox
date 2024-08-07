@@ -7,9 +7,18 @@
 #include "Astranox/core/Application.hpp"
 
 #include <GLFW/glfw3.h>
+#include <glm/gtc/matrix_transform.hpp>
+
+#include <chrono>
 
 namespace Astranox
 {
+    struct UniformBufferObject {
+        alignas(16) glm::mat4 model;
+        alignas(16) glm::mat4 view;
+        alignas(16) glm::mat4 proj;
+    };
+
     VulkanSwapchain::VulkanSwapchain(Ref<VulkanDevice> device)
         : m_Device(device)
     {
@@ -148,9 +157,13 @@ namespace Astranox
 
         if (!m_Shader)
         {
-            std::string vertexShaderPath = "../Astranox-Rasterization/assets/shaders/vert.spv";
-            std::string fragmentShaderPath = "../Astranox-Rasterization/assets/shaders/frag.spv";
+            std::string vertexShaderPath = "../Astranox-Rasterization/assets/shaders/uniform-vert.spv";
+            std::string fragmentShaderPath = "../Astranox-Rasterization/assets/shaders/uniform-frag.spv";
             m_Shader = VulkanShader::create(vertexShaderPath, fragmentShaderPath);
+            m_Shader->createDescriptorSetLayout();
+
+            m_Pipeline = Ref<VulkanPipeline>::create(m_Shader);
+            m_Pipeline->createPipeline();
 
             // Vertex buffer
             {
@@ -220,11 +233,62 @@ namespace Astranox
                 ::vkFreeMemory(m_Device->getRaw(), stagingBufferMemory, nullptr);
             }
 
+            // Uniform buffers
+            {
+                m_UniformBuffers.resize(m_MaxFramesInFlight);
+                m_UniformBuffersMemory.resize(m_MaxFramesInFlight);
+                m_MappedUniformBuffers.resize(m_MaxFramesInFlight);
 
+                VkDeviceSize bufferSize = sizeof(UniformBufferObject);
+                for (size_t i = 0; i < m_MaxFramesInFlight; i++)
+                {
+                    createBuffer(
+                        bufferSize,
+                        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                        m_UniformBuffers[i],
+                        m_UniformBuffersMemory[i]
+                    );
 
+                    VK_CHECK(::vkMapMemory(m_Device->getRaw(), m_UniformBuffersMemory[i], 0, bufferSize, 0, &m_MappedUniformBuffers[i]));
+                }
+            }
 
-            m_Pipeline = Ref<VulkanPipeline>::create(m_Shader);
-            m_Pipeline->createPipeline();
+            createDescriptorPool();
+
+            std::vector<VkDescriptorSetLayout> layouts(m_MaxFramesInFlight, m_Shader->getDescriptorSetLayouts()[0]);
+            VkDescriptorSetAllocateInfo allocInfo{
+                .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+                .descriptorPool = m_DescriptorPool,
+                .descriptorSetCount = static_cast<uint32_t>(m_MaxFramesInFlight),
+                .pSetLayouts = layouts.data()
+            };
+
+            m_DescriptorSets.resize(m_MaxFramesInFlight);
+            VK_CHECK(::vkAllocateDescriptorSets(m_Device->getRaw(), &allocInfo, m_DescriptorSets.data()));
+
+            for (size_t i = 0; i < m_MaxFramesInFlight; i++)
+            {
+                VkDescriptorBufferInfo bufferInfo{
+                    .buffer = m_UniformBuffers[i],
+                    .offset = 0,
+                    .range = sizeof(UniformBufferObject)
+                };
+
+                VkWriteDescriptorSet descriptorWrite{
+                    .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                    .dstSet = m_DescriptorSets[i],
+                    .dstBinding = 0,
+                    .dstArrayElement = 0,
+                    .descriptorCount = 1,
+                    .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                    .pImageInfo = nullptr,
+                    .pBufferInfo = &bufferInfo,
+                    .pTexelBufferView = nullptr
+                };
+
+                ::vkUpdateDescriptorSets(m_Device->getRaw(), 1, &descriptorWrite, 0, nullptr);
+            }
         }
     }
 
@@ -239,6 +303,11 @@ namespace Astranox
         ::vkDestroyBuffer(m_Device->getRaw(), m_IndexBuffer, nullptr);
         ::vkFreeMemory(m_Device->getRaw(), m_IndexBufferMemory, nullptr);
 
+        for (size_t i = 0; i < m_MaxFramesInFlight; i++)
+        {
+            ::vkDestroyBuffer(m_Device->getRaw(), m_UniformBuffers[i], nullptr);
+            ::vkFreeMemory(m_Device->getRaw(), m_UniformBuffersMemory[i], nullptr);
+        }
 
         for (size_t i = 0; i < m_MaxFramesInFlight; i++)
         {
@@ -251,7 +320,6 @@ namespace Astranox
         m_CommandPool = nullptr;
 
         m_Pipeline = nullptr;
-        m_Shader = nullptr;
 
         // Destroy old swapchain
         for (auto framebuffer : m_Framebuffers)
@@ -265,6 +333,10 @@ namespace Astranox
         }
 
         ::vkDestroySwapchainKHR(m_Device->getRaw(), m_Swapchain, nullptr);
+
+        ::vkDestroyDescriptorPool(m_Device->getRaw(), m_DescriptorPool, nullptr);
+
+        m_Shader = nullptr;
 
         ::vkDestroyRenderPass(m_Device->getRaw(), m_RenderPass, nullptr);
 
@@ -329,8 +401,8 @@ namespace Astranox
 
         VkDeviceSize offsets[] = { 0 };
         vkCmdBindVertexBuffers(getCurrentCommandBuffer(), 0, 1, &m_VertexBuffer, offsets);
-
         vkCmdBindIndexBuffer(getCurrentCommandBuffer(), m_IndexBuffer, 0, VK_INDEX_TYPE_UINT16);
+        vkCmdBindDescriptorSets(getCurrentCommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline->getLayout(), 0, 1, &m_DescriptorSets[m_CurrentFramebufferIndex], 0, nullptr);
 
 
         // --------------------- Draw call ---------------------
@@ -366,6 +438,19 @@ namespace Astranox
             VK_CHECK(result);
         }
         // <<< Acquire next image
+
+        static auto startTime = std::chrono::high_resolution_clock::now();
+        float time = std::chrono::duration<float, std::chrono::seconds::period>(std::chrono::high_resolution_clock::now() - startTime).count();
+
+        // [TODO] Move this to a separate function
+        UniformBufferObject ubo{
+            .model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
+            .view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
+            .proj = glm::perspective(glm::radians(45.0f), m_SwapchainExtent.width / (float)m_SwapchainExtent.height, 0.1f, 10.0f)
+        };
+        ubo.proj[1][1] *= -1;
+        memcpy(m_MappedUniformBuffers[m_CurrentFramebufferIndex], &ubo, sizeof(ubo));
+
 
         vkResetCommandBuffer(getCurrentCommandBuffer(), 0);
     }
@@ -691,5 +776,22 @@ namespace Astranox
         ::vkQueueWaitIdle(m_Device->getGraphicsQueue());
 
         ::vkFreeCommandBuffers(m_Device->getRaw(), m_CommandPool->getGraphicsCommandPool(), 1, &commandBuffer);
+    }
+
+    void VulkanSwapchain::createDescriptorPool()
+    {
+        VkDescriptorPoolSize poolSize{
+            .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            .descriptorCount = static_cast<uint32_t>(m_MaxFramesInFlight)
+        };
+
+        VkDescriptorPoolCreateInfo poolInfo{
+            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+            .maxSets = static_cast<uint32_t>(m_MaxFramesInFlight),
+            .poolSizeCount = 1,
+            .pPoolSizes = &poolSize
+        };
+
+        VK_CHECK(::vkCreateDescriptorPool(m_Device->getRaw(), &poolInfo, nullptr, &m_DescriptorPool));
     }
 }

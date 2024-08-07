@@ -61,6 +61,8 @@ namespace Astranox
             VkBuffer dstBuffer,
             VkDeviceSize size
         );
+
+        void createDescriptorPool();
         
     private:
         Ref<VulkanDevice> m_Device = nullptr;
@@ -114,5 +116,12 @@ namespace Astranox
         };
         VkBuffer m_IndexBuffer = VK_NULL_HANDLE;
         VkDeviceMemory m_IndexBufferMemory = VK_NULL_HANDLE;
+
+        std::vector<VkBuffer> m_UniformBuffers;
+        std::vector<VkDeviceMemory> m_UniformBuffersMemory;
+        std::vector<void*> m_MappedUniformBuffers;
+
+        VkDescriptorPool m_DescriptorPool = VK_NULL_HANDLE;
+        std::vector<VkDescriptorSet> m_DescriptorSets;
     };
 }

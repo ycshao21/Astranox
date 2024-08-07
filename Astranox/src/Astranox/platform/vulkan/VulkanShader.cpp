@@ -46,6 +46,11 @@ namespace Astranox
     {
         auto device = VulkanContext::get()->getDevice();
 
+        for (auto layout : m_DescriptorSetLayouts)
+        {
+            ::vkDestroyDescriptorSetLayout(device->getRaw(), layout, nullptr);
+        }
+
         ::vkDestroyShaderModule(device->getRaw(), m_VertexShaderModule, nullptr);
         ::vkDestroyShaderModule(device->getRaw(), m_FragmentShaderModule, nullptr);
     }
@@ -83,5 +88,31 @@ namespace Astranox
             .pSpecializationInfo = nullptr,
         };
         m_ShaderStages.push_back(fragmentShaderStage);
+    }
+
+    void VulkanShader::createDescriptorSetLayout()
+    {
+        VkDescriptorSetLayoutBinding layoutBinding{
+            .binding = 0,
+            .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            .descriptorCount = 1,
+            .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+            .pImmutableSamplers = nullptr,
+        };
+
+        VkDescriptorSetLayoutCreateInfo layoutInfo{
+            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+            .bindingCount = 1,
+            .pBindings = &layoutBinding,
+        };
+
+        VkDescriptorSetLayout layout;
+        VK_CHECK(::vkCreateDescriptorSetLayout(
+                VulkanContext::get()->getDevice()->getRaw(),
+                &layoutInfo,
+                nullptr,
+                &layout)
+        );
+        m_DescriptorSetLayouts.push_back(layout);
     }
 }

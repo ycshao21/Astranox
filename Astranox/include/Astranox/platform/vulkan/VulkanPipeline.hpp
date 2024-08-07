@@ -15,6 +15,7 @@ namespace Astranox
 
     public:
         VkPipeline getRaw() { return m_Pipeline; }
+        VkPipelineLayout getLayout() { return m_PipelineLayout; }
 
     private:
         Ref<VulkanShader> m_Shader = nullptr;

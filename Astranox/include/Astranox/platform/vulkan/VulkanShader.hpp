@@ -14,6 +14,7 @@ namespace Astranox
         virtual ~VulkanShader();
 
         virtual void createShaders(const std::vector<char>& vertexCode, const std::vector<char>& fragmentCode) override;
+        void createDescriptorSetLayout();
         void destroy();
 
 
