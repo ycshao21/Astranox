@@ -179,6 +179,5 @@ namespace Astranox
         None = 0,
         Pressed = 1,
         Released = 2,
-        Repeat = 3
     };
 }

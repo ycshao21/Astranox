@@ -12,8 +12,6 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/hash.hpp>
 
-#include <chrono>
-
 #include "stb_image/stb_image.h"
 #include "tinyobjloader/tiny_obj_loader.h"
 
@@ -33,16 +31,12 @@ namespace std
 
 namespace Astranox
 {
-    struct UniformBufferObject {
-        alignas(16) glm::mat4 model;
-        alignas(16) glm::mat4 view;
-        alignas(16) glm::mat4 proj;
-    };
-
     VulkanSwapchain::VulkanSwapchain(Ref<VulkanDevice> device)
         : m_Device(device)
     {
         m_MSAASamples = getMaxUsableSampleCount();
+
+        m_Camera = Ref<PerspectiveCamera>::create(45.0f, 0.1f, 1000.0f);
     }
 
     void VulkanSwapchain::createSurface()
@@ -417,7 +411,7 @@ namespace Astranox
                 m_UniformBuffersMemory.resize(m_MaxFramesInFlight);
                 m_MappedUniformBuffers.resize(m_MaxFramesInFlight);
 
-                VkDeviceSize bufferSize = sizeof(UniformBufferObject);
+                VkDeviceSize bufferSize = sizeof(SceneData);
                 for (size_t i = 0; i < m_MaxFramesInFlight; i++)
                 {
                     createBuffer(
@@ -452,7 +446,7 @@ namespace Astranox
                 VkDescriptorBufferInfo bufferInfo{
                     .buffer = m_UniformBuffers[i],
                     .offset = 0,
-                    .range = sizeof(UniformBufferObject)
+                    .range = sizeof(SceneData)
                 };
 
                 // Sampler
@@ -584,7 +578,7 @@ namespace Astranox
         // <<< Begin command buffer
 
         std::array<VkClearValue, 2> clearValues;
-        clearValues[0].color = { 0.0f, 0.0f, 0.0f, 1.0f };
+        clearValues[0].color = { 0.01f, 0.01f, 0.01f, 1.0f };
         clearValues[1].depthStencil = { 1.0f, 0u };
 
         // Begin render pass >>>
@@ -663,17 +657,10 @@ namespace Astranox
         }
         // <<< Acquire next image
 
-        static auto startTime = std::chrono::high_resolution_clock::now();
-        float time = std::chrono::duration<float, std::chrono::seconds::period>(std::chrono::high_resolution_clock::now() - startTime).count();
-
         // [TODO] Move this to a separate function
-        UniformBufferObject ubo{
-            .model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
-            .view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
-            .proj = glm::perspective(glm::radians(45.0f), m_SwapchainExtent.width / (float)m_SwapchainExtent.height, 0.1f, 10.0f)
-        };
-        ubo.proj[1][1] *= -1;
-        memcpy(m_MappedUniformBuffers[m_CurrentFramebufferIndex], &ubo, sizeof(ubo));
+        m_Camera->onUpdate();
+        m_Camera->onResize(m_SwapchainExtent.width, m_SwapchainExtent.height);
+        memcpy(m_MappedUniformBuffers[m_CurrentFramebufferIndex], m_Camera->getSceneData(), sizeof(SceneData));
 
 
         vkResetCommandBuffer(getCurrentCommandBuffer(), 0);

@@ -28,6 +28,7 @@ namespace Astranox
     {
         Window& window = Application::get().getWindow();
         KeyState state = window.getKeyState(key);
+
         return state == KeyState::Pressed || state == KeyState::Repeat;
     }
 }

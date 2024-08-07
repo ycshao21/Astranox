@@ -6,6 +6,8 @@
 #include "VulkanShader.hpp"
 #include "VulkanPipeline.hpp"
 
+#include "Astranox/rendering/PerspectiveCamera.hpp"
+
 #include <vector>
 
 namespace Astranox
@@ -209,5 +211,7 @@ namespace Astranox
         std::vector<VkDescriptorSet> m_DescriptorSets;
 
         VkSampleCountFlagBits m_MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+
+        Ref<PerspectiveCamera> m_Camera = nullptr;
     };
 }
