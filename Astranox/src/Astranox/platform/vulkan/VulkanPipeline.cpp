@@ -19,7 +19,7 @@ namespace Astranox
         ::vkDestroyPipelineCache(device->getRaw(), m_PipelineCache, nullptr);
     }
 
-    void VulkanPipeline::createPipeline()
+    void VulkanPipeline::createPipeline(VkSampleCountFlagBits MSAASample)
     {
         auto device = VulkanContext::get()->getDevice();
 
@@ -123,8 +123,9 @@ namespace Astranox
         // (6) Multisample
         VkPipelineMultisampleStateCreateInfo multisampleInfo = {
             .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
-            .rasterizationSamples = VK_SAMPLE_COUNT_1_BIT,
-            .sampleShadingEnable = VK_FALSE,
+            .rasterizationSamples = MSAASample,
+            .sampleShadingEnable = VK_TRUE,
+            .minSampleShading = 0.2f,
         };
 
         // (7) Depth and Stencil

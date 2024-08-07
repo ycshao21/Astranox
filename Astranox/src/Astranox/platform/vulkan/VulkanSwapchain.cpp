@@ -42,6 +42,7 @@ namespace Astranox
     VulkanSwapchain::VulkanSwapchain(Ref<VulkanDevice> device)
         : m_Device(device)
     {
+        m_MSAASamples = getMaxUsableSampleCount();
     }
 
     void VulkanSwapchain::createSurface()
@@ -150,6 +151,34 @@ namespace Astranox
         }
         getSwapchainImages();
 
+        if (m_ColorImage)
+        {
+            ::vkDestroyImageView(m_Device->getRaw(), m_ColorImageView, nullptr);
+            ::vkDestroyImage(m_Device->getRaw(), m_ColorImage, nullptr);
+            ::vkFreeMemory(m_Device->getRaw(), m_ColorImageMemory, nullptr);
+        }
+        VkFormat colorFormat = m_ImageFormat;
+
+        createImage(
+            m_SwapchainExtent.width,
+            m_SwapchainExtent.height,
+            1,
+            m_MSAASamples,
+            colorFormat,
+            VK_IMAGE_TILING_OPTIMAL,
+            VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+            m_ColorImage,
+            m_ColorImageMemory
+        );
+
+        m_ColorImageView = createImageView(
+            m_ColorImage,
+            colorFormat,
+            VK_IMAGE_ASPECT_COLOR_BIT,
+            1
+        );
+
         if (m_DepthImage)
         {
             ::vkDestroyImageView(m_Device->getRaw(), m_DepthImageView, nullptr);
@@ -161,6 +190,7 @@ namespace Astranox
             m_SwapchainExtent.width,
             m_SwapchainExtent.height,
             depthMipLevels,
+            m_MSAASamples,
             physicalDevice->getDepthFormat(),
             VK_IMAGE_TILING_OPTIMAL,
             VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
@@ -209,7 +239,7 @@ namespace Astranox
             m_Shader->createDescriptorSetLayout();
 
             m_Pipeline = Ref<VulkanPipeline>::create(m_Shader);
-            m_Pipeline->createPipeline();
+            m_Pipeline->createPipeline(m_MSAASamples);
 
             std::string modelPath = "../Astranox-Rasterization/assets/models/viking_room.obj";
             loadModel(modelPath);
@@ -247,6 +277,7 @@ namespace Astranox
                     texWidth,
                     texHeight,
                     m_TextureMipLevels,
+                    VK_SAMPLE_COUNT_1_BIT,
                     VK_FORMAT_R8G8B8A8_SRGB,
                     VK_IMAGE_TILING_OPTIMAL,
                     textureUsageFlags,
@@ -496,6 +527,10 @@ namespace Astranox
         ::vkDestroyImage(m_Device->getRaw(), m_DepthImage, nullptr);
         ::vkFreeMemory(m_Device->getRaw(), m_DepthImageMemory, nullptr);
 
+        ::vkDestroyImageView(m_Device->getRaw(), m_ColorImageView, nullptr);
+        ::vkDestroyImage(m_Device->getRaw(), m_ColorImage, nullptr);
+        ::vkFreeMemory(m_Device->getRaw(), m_ColorImageMemory, nullptr);
+
         for (size_t i = 0; i < m_MaxFramesInFlight; i++)
         {
             ::vkDestroySemaphore(m_Device->getRaw(), m_ImageAvailableSemaphores[i], nullptr);
@@ -674,7 +709,6 @@ namespace Astranox
             .pResults = nullptr
         };
         VkResult result = ::vkQueuePresentKHR(m_Device->getGraphicsQueue(), &presentInfo);
-        VK_CHECK(result);
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR) {
             this->resize(m_SwapchainExtent.width, m_SwapchainExtent.height);
@@ -774,13 +808,13 @@ namespace Astranox
         VkAttachmentDescription colorAttachment{
             .flags = 0,
             .format = m_ImageFormat,
-            .samples = VK_SAMPLE_COUNT_1_BIT,
+            .samples = m_MSAASamples,
             .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
             .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
             .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
             .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
             .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-            .finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
+            .finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
         };
 
         VkAttachmentReference colorAttachmentRef{
@@ -790,7 +824,7 @@ namespace Astranox
 
         VkAttachmentDescription depthAttachment{
             .format = m_Device->getPhysicalDevice()->getDepthFormat(),
-            .samples = VK_SAMPLE_COUNT_1_BIT,
+            .samples = m_MSAASamples,
             .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
             .storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
             .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
@@ -804,17 +838,28 @@ namespace Astranox
             .layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
         };
 
+        VkAttachmentDescription colorAttachmentResolve{
+            .format = m_ImageFormat,
+            .samples = VK_SAMPLE_COUNT_1_BIT,
+            .loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+            .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+            .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+            .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+            .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+            .finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
+        };
+
+        VkAttachmentReference colorAttachmentResolveRef{
+            .attachment = 2,
+            .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+        };
+
         VkSubpassDescription subpass{
-            .flags = 0,
             .pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
-            .inputAttachmentCount = 0,
-            .pInputAttachments = nullptr,
             .colorAttachmentCount = 1,
             .pColorAttachments = &colorAttachmentRef,
-            .pResolveAttachments = nullptr,
+            .pResolveAttachments = &colorAttachmentResolveRef,
             .pDepthStencilAttachment = &depthAttachmentRef,
-            .preserveAttachmentCount = 0,
-            .pPreserveAttachments = nullptr
         };
 
         VkSubpassDependency dependency{
@@ -822,11 +867,11 @@ namespace Astranox
             .dstSubpass = 0,
             .srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
             .dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
-            .srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+            .srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
             .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
         };
 
-        std::array<VkAttachmentDescription, 2> attachments = { colorAttachment, depthAttachment };
+        std::array<VkAttachmentDescription, 3> attachments = { colorAttachment, depthAttachment, colorAttachmentResolve };
 
         VkRenderPassCreateInfo renderPassInfo{
             .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
@@ -854,7 +899,7 @@ namespace Astranox
 
         for (size_t i = 0; i < m_Framebuffers.size(); ++i)
         {
-            std::array<VkImageView, 2> attachments = { m_Images[i].imageView, m_DepthImageView };
+            std::array<VkImageView, 3> attachments = { m_ColorImageView, m_DepthImageView, m_Images[i].imageView };
 
             createInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
             createInfo.pAttachments = attachments.data();
@@ -977,7 +1022,18 @@ namespace Astranox
         VK_CHECK(::vkCreateDescriptorPool(m_Device->getRaw(), &poolInfo, nullptr, &m_DescriptorPool));
     }
 
-    void VulkanSwapchain::createImage(uint32_t width, uint32_t height, uint32_t mipLevels, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory)
+    void VulkanSwapchain::createImage(
+        uint32_t width,
+        uint32_t height,
+        uint32_t mipLevels,
+        VkSampleCountFlagBits numSamples,
+        VkFormat format,
+        VkImageTiling tiling,
+        VkImageUsageFlags usage,
+        VkMemoryPropertyFlags properties,
+        VkImage& image,
+        VkDeviceMemory& imageMemory
+    )
     {
         VkImageCreateInfo imageInfo{
             .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
@@ -991,7 +1047,7 @@ namespace Astranox
             },
             .mipLevels = mipLevels,
             .arrayLayers = 1,
-            .samples = VK_SAMPLE_COUNT_1_BIT,
+            .samples = numSamples,
             .tiling = tiling,
             .usage = usage,
             .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
@@ -1311,5 +1367,20 @@ namespace Astranox
 
         AST_INFO("Loaded model: {0}", modelPath);
         AST_INFO("Vertices: {0}, Indices: {1}", vertices.size(), indices.size());
+    }
+
+    VkSampleCountFlagBits VulkanSwapchain::getMaxUsableSampleCount()
+    {
+        VkPhysicalDeviceProperties properties = m_Device->getPhysicalDevice()->getProperties();
+
+        VkSampleCountFlags counts = properties.limits.framebufferColorSampleCounts & properties.limits.framebufferDepthSampleCounts;
+        if (counts & VK_SAMPLE_COUNT_64_BIT) { return VK_SAMPLE_COUNT_64_BIT; }
+        if (counts & VK_SAMPLE_COUNT_32_BIT) { return VK_SAMPLE_COUNT_32_BIT; }
+        if (counts & VK_SAMPLE_COUNT_16_BIT) { return VK_SAMPLE_COUNT_16_BIT; }
+        if (counts & VK_SAMPLE_COUNT_8_BIT) { return VK_SAMPLE_COUNT_8_BIT; }
+        if (counts & VK_SAMPLE_COUNT_4_BIT) { return VK_SAMPLE_COUNT_4_BIT; }
+        if (counts & VK_SAMPLE_COUNT_2_BIT) { return VK_SAMPLE_COUNT_2_BIT; }
+
+        return VK_SAMPLE_COUNT_1_BIT;
     }
 }

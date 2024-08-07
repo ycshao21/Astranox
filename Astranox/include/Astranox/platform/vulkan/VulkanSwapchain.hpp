@@ -81,6 +81,7 @@ namespace Astranox
             uint32_t width,
             uint32_t height,
             uint32_t mipLevels,
+            VkSampleCountFlagBits numSamples,
             VkFormat format,
             VkImageTiling tiling,
             VkImageUsageFlags usage,
@@ -121,6 +122,8 @@ namespace Astranox
         );
 
         void loadModel(const std::string& modelPath);
+
+        VkSampleCountFlagBits getMaxUsableSampleCount();
         
     private:
         Ref<VulkanDevice> m_Device = nullptr;
@@ -159,6 +162,10 @@ namespace Astranox
         // Remove
 		Ref<VulkanShader> m_Shader = nullptr;
 		Ref<VulkanPipeline> m_Pipeline = nullptr;
+
+        VkImage m_ColorImage = VK_NULL_HANDLE;
+        VkDeviceMemory m_ColorImageMemory = VK_NULL_HANDLE;
+        VkImageView m_ColorImageView = VK_NULL_HANDLE;
 
         VkImage m_DepthImage = VK_NULL_HANDLE;
         VkDeviceMemory m_DepthImageMemory = VK_NULL_HANDLE;
@@ -200,5 +207,7 @@ namespace Astranox
 
         VkDescriptorPool m_DescriptorPool = VK_NULL_HANDLE;
         std::vector<VkDescriptorSet> m_DescriptorSets;
+
+        VkSampleCountFlagBits m_MSAASamples = VK_SAMPLE_COUNT_1_BIT;
     };
 }

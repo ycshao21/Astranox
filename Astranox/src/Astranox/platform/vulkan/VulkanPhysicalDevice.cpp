@@ -51,6 +51,8 @@ namespace Astranox
         AST_CORE_INFO("  - API version: {0}", m_Properties.apiVersion);
         // <<< Find a suitable physical device
 
+        m_Features.samplerAnisotropy = true;
+
         // Get queue family properties >>>
         uint32_t queueFamilyCount = 0;
         ::vkGetPhysicalDeviceQueueFamilyProperties(m_PhysicalDevice, &queueFamilyCount, nullptr);
