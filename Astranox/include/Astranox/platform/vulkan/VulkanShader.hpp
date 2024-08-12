@@ -1,7 +1,8 @@
 #pragma once
 
-#include <vulkan/vulkan.h>
 #include "Astranox/rendering/Shader.hpp"
+
+#include <vulkan/vulkan.h>
 
 namespace Astranox
 {
@@ -10,7 +11,7 @@ namespace Astranox
         friend class VulkanPipeline;
 
     public:
-        VulkanShader(const std::string& vertexPath, const std::string& fragmentPath);
+        VulkanShader(const std::filesystem::path& vertexPath, const std::filesystem::path& fragmentPath);
         virtual ~VulkanShader();
 
         virtual void createShaders(const std::vector<char>& vertexCode, const std::vector<char>& fragmentCode) override;
@@ -30,7 +31,7 @@ namespace Astranox
         std::vector<VkPipelineShaderStageCreateInfo>& getShaderStageCreateInfos() { return m_ShaderStages; }
 
     private:
-        std::vector<char> readShaderFile(const std::string& codeFile);
+        std::vector<char> readCompiledShaderFile(const std::filesystem::path& codeFile);
 
     private:
         VkShaderModule m_VertexShaderModule = VK_NULL_HANDLE;

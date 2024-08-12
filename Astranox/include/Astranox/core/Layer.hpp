@@ -1,4 +1,5 @@
 #pragma once
+#include "Timestep.hpp"
 
 namespace Astranox
 {
@@ -13,7 +14,7 @@ namespace Astranox
 
         virtual void onAttach() {}
         virtual void onDetach() {}
-        virtual void onUpdate() {}
+        virtual void onUpdate(Timestep ts) {}
         virtual void onEvent(Event& e) {}
 
         inline virtual const std::string& getName() const final { return m_DebugName; }

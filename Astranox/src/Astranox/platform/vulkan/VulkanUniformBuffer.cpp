@@ -1,0 +1,42 @@
+#include "pch.hpp"
+#include "Astranox/platform/vulkan/VulkanBufferManager.hpp"
+#include "Astranox/platform/vulkan/VulkanUniformBuffer.hpp"
+#include "Astranox/platform/vulkan/VulkanContext.hpp"
+#include "Astranox/platform/vulkan/VulkanUtils.hpp"
+
+namespace Astranox
+{
+    VulkanUniformBuffer::VulkanUniformBuffer(uint32_t bytes)
+        : m_Bytes(bytes)
+    {
+        m_Device = VulkanContext::get()->getDevice();
+
+        VulkanBufferManager::createBuffer(
+            bytes,
+            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            m_UniformBuffer,
+            m_UniformBufferMemory
+        );
+
+        VK_CHECK(::vkMapMemory(m_Device->getRaw(), m_UniformBufferMemory, 0, bytes, 0, &m_MappedUniformBuffer));
+
+        m_DescriptorBufferInfo = {
+            .buffer = m_UniformBuffer,
+            .offset = 0,
+            .range = bytes
+        };
+    }
+
+    VulkanUniformBuffer::~VulkanUniformBuffer()
+    {
+        ::vkUnmapMemory(m_Device->getRaw(), m_UniformBufferMemory);
+
+        VulkanBufferManager::destroyBuffer(m_UniformBuffer, m_UniformBufferMemory);
+    }
+
+    void VulkanUniformBuffer::setData(const void* data)
+    {
+        std::memcpy(m_MappedUniformBuffer, data, m_Bytes);
+    }
+}

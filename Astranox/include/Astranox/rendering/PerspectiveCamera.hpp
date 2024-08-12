@@ -1,22 +1,16 @@
 #pragma once
 #include <glm/glm.hpp>
+#include "Astranox/core/Timestep.hpp"
 
 namespace Astranox
 {
-    struct SceneData
-    {
-        alignas(16) glm::mat4 model;
-        alignas(16) glm::mat4 view;
-        alignas(16) glm::mat4 projection;
-    };
-
     class PerspectiveCamera: public RefCounted
     {
     public:
         PerspectiveCamera(float fov, float nearClip, float farClip);
         ~PerspectiveCamera();
 
-        void onUpdate();
+        void onUpdate(Timestep ts);
         void onResize(uint32_t width, uint32_t height);
 
         const glm::mat4& getProjectionMatrix() const { return m_ProjectionMatrix; }
@@ -26,8 +20,6 @@ namespace Astranox
 
         const glm::vec3& getPosition() const { return m_Position; }
         const glm::vec3& getDirection() const { return m_Direction; }
-
-        SceneData* getSceneData();
 
     private:
         void updateProjectionMatrix();
@@ -52,6 +44,7 @@ namespace Astranox
 
         glm::vec2 m_LastMousePos{ 0.0f, 0.0f };
 
-        static SceneData* s_CameraData;
+        float m_MoveSpeed = 4.0f;
+        float m_RotationSpeed = 1000.0f;
     };
 }

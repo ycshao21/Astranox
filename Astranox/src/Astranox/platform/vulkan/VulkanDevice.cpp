@@ -68,6 +68,8 @@ namespace Astranox
 
     void VulkanDevice::destroy()
     {
+        m_CommandPool = nullptr;
+
         ::vkDestroyDevice(m_Device, nullptr);
         m_Device = VK_NULL_HANDLE;
     }

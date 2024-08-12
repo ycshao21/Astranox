@@ -15,6 +15,14 @@ namespace Astranox
     public:
         void waitIdle() const;
 
+        Ref<VulkanCommandPool> getCommandPool() {
+            if (!m_CommandPool)
+            {
+                m_CommandPool = Ref<VulkanCommandPool>::create();
+            }
+            return m_CommandPool;
+        }
+
     public:
         Ref<VulkanPhysicalDevice> getPhysicalDevice() { return m_PhysicalDevice; }
         const Ref<VulkanPhysicalDevice> getPhysicalDevice() const { return m_PhysicalDevice; }
@@ -30,5 +38,6 @@ namespace Astranox
         Ref<VulkanPhysicalDevice> m_PhysicalDevice = nullptr;
 
         VkQueue m_GraphicsQueue = VK_NULL_HANDLE;
+        Ref<VulkanCommandPool> m_CommandPool = nullptr;
     };
 }

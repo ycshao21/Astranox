@@ -13,10 +13,10 @@ namespace Astranox
     {
     }
 
-    std::vector<char> VulkanShader::readShaderFile(const std::string& codeFile)
+    std::vector<char> VulkanShader::readCompiledShaderFile(const std::filesystem::path& codeFile)
     {
         std::ifstream file(codeFile, std::ios::ate | std::ios::binary);
-        AST_CORE_ASSERT(file.is_open(), "Failed to open file: {0}", codeFile);
+        AST_CORE_ASSERT(file.is_open(), "Failed to open file: {0}", codeFile.string());
 
         size_t fileSize = static_cast<size_t>(file.tellg());
         std::vector<char> code(fileSize);
@@ -29,10 +29,10 @@ namespace Astranox
         return code;
     }
 
-    VulkanShader::VulkanShader(const std::string& vertexPath, const std::string& fragmentPath)
+    VulkanShader::VulkanShader(const std::filesystem::path& vertexPath, const std::filesystem::path& fragmentPath)
     {
-        auto vertexCode = readShaderFile(vertexPath);
-        auto fragmentCode = readShaderFile(fragmentPath);
+        auto vertexCode = readCompiledShaderFile(vertexPath);
+        auto fragmentCode = readCompiledShaderFile(fragmentPath);
 
         createShaders(vertexCode, fragmentCode);
     }

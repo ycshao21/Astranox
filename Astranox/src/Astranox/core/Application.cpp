@@ -1,5 +1,8 @@
 #include "pch.hpp"
 #include "Astranox/core/Application.hpp"
+#include "Astranox/rendering/Renderer.hpp"
+
+#include <GLFW/glfw3.h>
 
 namespace Astranox
 {
@@ -23,15 +26,14 @@ namespace Astranox
             }
         );
 
-        m_Renderer = Ref<VulkanRenderer>::create();
-        m_Renderer->init();
+        Renderer::init();
     }
 
     Application::~Application()
     {
-        m_Renderer->shutdown();
-
         m_LayerStack.clear();
+
+        Renderer::shutdown();
 
         m_Window->destroy();
         m_Window.reset();
@@ -43,6 +45,12 @@ namespace Astranox
     {
         while (m_Running)
         {
+            // [TODO] Platform::getTime()
+            float time = static_cast<float>(glfwGetTime());
+            Timestep timestep = time - m_LastFrameTime;
+            m_LastFrameTime = time;
+            //AST_CORE_DEBUG("Frame time: {0}ms", timestep.getMilliseconds());
+
             m_Window->pollEvents();
 
             float startTime = std::chrono::duration<float>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
@@ -53,7 +61,7 @@ namespace Astranox
                 // Update all layers
                 for (Layer* layer : m_LayerStack)
                 {
-                    layer->onUpdate();
+                    layer->onUpdate(timestep);
                 }
 
                 // Update the window

@@ -7,20 +7,16 @@
 
 namespace Astranox
 {
-    SceneData* PerspectiveCamera::s_CameraData = nullptr;
-
     PerspectiveCamera::PerspectiveCamera(float fov, float nearClip, float farClip)
         : m_Fov(fov), m_Near(nearClip), m_Far(farClip)
     {
-        s_CameraData = new SceneData();
     }
 
     PerspectiveCamera::~PerspectiveCamera()
     {
-        delete s_CameraData;
     }
 
-    void PerspectiveCamera::onUpdate()
+    void PerspectiveCamera::onUpdate(Timestep ts)
     {
         glm::vec2 mousePos = Input::GetMousePosition();
         glm::vec2 delta = (mousePos - m_LastMousePos) * 0.002f;
@@ -39,49 +35,45 @@ namespace Astranox
         constexpr glm::vec3 upDirection = glm::vec3(0.0f, 1.0f, 0.0f);
         glm::vec3 rightDirection = glm::cross(m_Direction, upDirection);
 
-        float speed = 0.002f;
-
         if (Input::isKeyPressed(Key::W))
         {
-            m_Position += m_Direction * speed;
+            m_Position += m_Direction * m_MoveSpeed * ts.getSeconds();
             moved = true;
         }
         else if (Input::isKeyPressed(Key::S))
         {
-            m_Position -= m_Direction * speed;
+            m_Position -= m_Direction * m_MoveSpeed * ts.getSeconds();
             moved = true;
         }
 
         if (Input::isKeyPressed(Key::A))
         {
-            m_Position -= rightDirection * speed;
+            m_Position -= rightDirection * m_MoveSpeed * ts.getSeconds();
             moved = true;
         }
         else if (Input::isKeyPressed(Key::D))
         {
-            m_Position += rightDirection * speed;
+            m_Position += rightDirection * m_MoveSpeed * ts.getSeconds();
             moved = true;
         }
 
         if (Input::isKeyPressed(Key::Space))
         {
-            m_Position += upDirection * speed;
+            m_Position += upDirection * m_MoveSpeed * ts.getSeconds();
             moved = true;
         }
         else if (Input::isKeyPressed(Key::LeftShift))
         {
-            m_Position -= upDirection * speed;
+            m_Position -= upDirection * m_MoveSpeed * ts.getSeconds();
             moved = true;
         }
 
-        float rotationSpeed = 0.5f;
-        
         if (delta.x != 0.0f || delta.y != 0.0f)
         {
             moved = true;
 
-            float yawDelta = delta.x * rotationSpeed;
-            float pitchDelta = delta.y * rotationSpeed;
+            float yawDelta = delta.x * m_RotationSpeed * ts.getSeconds();
+            float pitchDelta = delta.y * m_RotationSpeed * ts.getSeconds();
 
             glm::quat q = glm::normalize(
                 glm::cross(
@@ -110,16 +102,6 @@ namespace Astranox
 
         updateProjectionMatrix();
         updateViewMatrix();
-    }
-
-    SceneData* PerspectiveCamera::getSceneData()
-    {
-        s_CameraData->model = glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f)) * glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        s_CameraData->projection = m_ProjectionMatrix;
-        s_CameraData->projection[1][1] *= -1.0f; // Flip the Y axis for Vulkan [0, height] to [height, 0]
-        s_CameraData->view = m_ViewMatrix;
-
-        return s_CameraData;
     }
 
     void PerspectiveCamera::updateProjectionMatrix()

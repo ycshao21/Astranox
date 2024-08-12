@@ -1,9 +1,8 @@
 #pragma once
 #include "Window.hpp"
 #include "LayerStack.hpp"
+#include "Timestep.hpp"
 #include "events/ApplicationEvent.hpp"
-
-#include "Astranox/platform/vulkan/VulkanRenderer.hpp"
 
 namespace Astranox
 {
@@ -54,8 +53,8 @@ namespace Astranox
 
         LayerStack m_LayerStack;
 
-        // TEMP
-        Ref<VulkanRenderer> m_Renderer = nullptr;
+        Timestep m_Timestep;
+        float m_LastFrameTime = 0.0f;
     };
 
     /**

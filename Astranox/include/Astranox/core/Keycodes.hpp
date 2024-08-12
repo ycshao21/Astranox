@@ -162,8 +162,8 @@ namespace Astranox
     enum class CursorMode : uint8_t
     {
         Normal = 0,
-        Locked = 1,
-        Hidden = 2
+        Hidden = 1,
+        Locked = 2
     };
 
     enum class KeyState : uint8_t

@@ -1,7 +1,11 @@
 #include "pch.hpp"
 #include "Astranox/platform/vulkan/VulkanPipeline.hpp"
+
 #include "Astranox/platform/vulkan/VulkanContext.hpp"
 #include "Astranox/platform/vulkan/VulkanUtils.hpp"
+
+#include "Astranox/rendering/Renderer.hpp"
+#include "Astranox/rendering/Mesh.hpp"
 
 namespace Astranox
 {
@@ -19,7 +23,7 @@ namespace Astranox
         ::vkDestroyPipelineCache(device->getRaw(), m_PipelineCache, nullptr);
     }
 
-    void VulkanPipeline::createPipeline(VkSampleCountFlagBits MSAASample)
+    void VulkanPipeline::createPipeline()
     {
         auto device = VulkanContext::get()->getDevice();
 
@@ -34,7 +38,6 @@ namespace Astranox
             .pushConstantRangeCount = static_cast<uint32_t>(pushConstantRanges.size()),
             .pPushConstantRanges = pushConstantRanges.data(),
         };
-
         VK_CHECK(::vkCreatePipelineLayout(device->getRaw(), &pipelineLayoutInfo, nullptr, &m_PipelineLayout));
         // <<< Pipeline Layout
 
@@ -121,9 +124,10 @@ namespace Astranox
         };
 
         // (6) Multisample
+        VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
         VkPipelineMultisampleStateCreateInfo multisampleInfo = {
             .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
-            .rasterizationSamples = MSAASample,
+            .rasterizationSamples = msaaSamples,
             .sampleShadingEnable = VK_TRUE,
             .minSampleShading = 0.2f,
         };
@@ -194,7 +198,7 @@ namespace Astranox
             .pColorBlendState = &colorBlendingInfo,
             .pDynamicState = &dynamicStateInfo,
             .layout = m_PipelineLayout,
-            .renderPass = swapchain->getVkRenderPass(),
+            .renderPass = swapchain->getRenderPass(),
             .subpass = 0,
             .basePipelineHandle = VK_NULL_HANDLE,
             .basePipelineIndex = -1,

@@ -7,11 +7,14 @@ namespace Astranox
     {
         m_Layers.emplace(m_Layers.begin() + m_LayerInsertIndex, layer);
         m_LayerInsertIndex++;
+
+        layer->onAttach();
     }
 
     void LayerStack::pushOverlay(Layer* overlay)
     {
         m_Layers.emplace_back(overlay);
+        overlay->onAttach();
     }
 
     void LayerStack::popLayer(Layer* layer)
@@ -22,6 +25,7 @@ namespace Astranox
             m_Layers.erase(it);
             m_LayerInsertIndex--;
         }
+        layer->onDetach();
     }
 
     void LayerStack::popOverlay(Layer* overlay)
@@ -31,6 +35,7 @@ namespace Astranox
         {
             m_Layers.erase(it);
         }
+        overlay->onDetach();
     }
 
     void LayerStack::clear()

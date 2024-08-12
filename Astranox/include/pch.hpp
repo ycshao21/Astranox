@@ -23,6 +23,7 @@
 #include <Astranox/core/Base.hpp>
 #include <Astranox/core/RefCounted.hpp>
 #include <Astranox/core/Logging.hpp>
+#include <Astranox/core/Buffer.hpp>
 
 #include <Astranox/core/events/Event.hpp>
 #include <Astranox/core/events/ApplicationEvent.hpp>

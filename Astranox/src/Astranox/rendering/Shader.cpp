@@ -4,7 +4,7 @@
 
 namespace Astranox
 {
-    Ref<Shader> Shader::create(const std::string& vertexPath, const std::string& fragmentPath)
+    Ref<Shader> Shader::create(const std::filesystem::path& vertexPath, const std::filesystem::path& fragmentPath)
     {
         return Ref<VulkanShader>::create(vertexPath, fragmentPath);
     }

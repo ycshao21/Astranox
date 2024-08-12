@@ -11,7 +11,7 @@ namespace Astranox
         VulkanPipeline(Ref<Shader> shader);
         virtual ~VulkanPipeline();
 
-        void createPipeline(VkSampleCountFlagBits MSAASample);
+        void createPipeline();
 
     public:
         VkPipeline getRaw() { return m_Pipeline; }

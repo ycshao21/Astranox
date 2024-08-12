@@ -17,6 +17,9 @@ namespace Astranox
         VkCommandPool getGraphicsCommandPool() { return m_GraphicsCommandPool; }
         const VkCommandPool getGraphicsCommandPool() const { return m_GraphicsCommandPool; }
 
+        void beginOneTimeBuffer(VkCommandBuffer commandBuffer);
+        void endOneTimeBuffer(VkCommandBuffer commandBuffer);
+
     private:
         VkCommandPool m_GraphicsCommandPool = VK_NULL_HANDLE;
     };

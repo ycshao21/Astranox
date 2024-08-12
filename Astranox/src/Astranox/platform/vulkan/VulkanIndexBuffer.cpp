@@ -1,12 +1,13 @@
 #include "pch.hpp"
-#include "Astranox/platform/vulkan/VulkanVertexBuffer.hpp"
+#include "Astranox/platform/vulkan/VulkanIndexBuffer.hpp"
 #include "Astranox/platform/vulkan/VulkanContext.hpp"
 #include "Astranox/platform/vulkan/VulkanBufferManager.hpp"
 #include "Astranox/platform/vulkan/VulkanUtils.hpp"
 
 namespace Astranox
 {
-    VulkanVertexBuffer::VulkanVertexBuffer(void* data, uint32_t bytes)
+    VulkanIndexBuffer::VulkanIndexBuffer(uint32_t* data, uint32_t bytes)
+        : m_Count(bytes / sizeof(uint32_t))
     {
         m_Device = VulkanContext::get()->getDevice();
 
@@ -29,14 +30,14 @@ namespace Astranox
 
         VulkanBufferManager::createBuffer(
             bytes,
-            VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+            VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-            m_VertexBuffer,
-            m_VertexBufferMemory
+            m_IndexBuffer,
+            m_IndexBufferMemory
         );
         VulkanBufferManager::copyBuffer(
             stagingBuffer,
-            m_VertexBuffer,
+            m_IndexBuffer,
             bytes
         );
         VulkanBufferManager::destroyBuffer(
@@ -45,17 +46,16 @@ namespace Astranox
         );
     }
 
-    VulkanVertexBuffer::~VulkanVertexBuffer()
+    VulkanIndexBuffer::~VulkanIndexBuffer()
     {
         VulkanBufferManager::destroyBuffer(
-            m_VertexBuffer,
-            m_VertexBufferMemory
+            m_IndexBuffer,
+            m_IndexBufferMemory
         );
     }
 
-    void VulkanVertexBuffer::bind()
+    void VulkanIndexBuffer::bind()
     {
-        /*VkDeviceSize offsets[] = { 0 };
-        vkCmdBindVertexBuffers(getCurrentCommandBuffer(), 0, 1, &m_VertexBuffer, offsets);*/
+        //vkCmdBindIndexBuffer(getCurrentCommandBuffer(), m_IndexBuffer, 0, VK_INDEX_TYPE_UINT32);
     }
 }

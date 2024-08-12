@@ -1,11 +1,14 @@
 #include <Astranox.hpp>
 
+#include "TempLayer.hpp"
+
 class MyApp : public Astranox::Application
 {
 public:
     MyApp(const Astranox::ApplicationSpecification& spec)
         : Astranox::Application(spec)
     {
+        pushLayer(new TempLayer());
     }
 
     virtual ~MyApp() = default;
