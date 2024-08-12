@@ -6,12 +6,15 @@
 
 #include "Astranox/rendering/Renderer.hpp"
 #include "Astranox/rendering/Mesh.hpp"
+#include "Astranox/rendering/VertexBufferLayout.hpp"
 
 namespace Astranox
 {
-    VulkanPipeline::VulkanPipeline(Ref<Shader> shader)
+    VulkanPipeline::VulkanPipeline(Ref<Shader> shader, const VertexBufferLayout& vertexBufferLayout)
     {
         m_Shader = shader.as<VulkanShader>();
+
+        m_VertexBufferLayout = vertexBufferLayout;
     }
 
     VulkanPipeline::~VulkanPipeline()
@@ -52,29 +55,19 @@ namespace Astranox
             }
         };
 
-        std::vector<VkVertexInputAttributeDescription> vertexInputAttributes {
-            // Position
-            {
-                .location = 0,
+        std::vector<VkVertexInputAttributeDescription> vertexInputAttributes;
+        auto& elements = m_VertexBufferLayout.getElements();
+        for (uint32_t i = 0; i < static_cast<uint32_t>(elements.size()); i++)
+        {
+            const auto& e = elements[i];
+            VkVertexInputAttributeDescription attribute = {
+                .location = i,
                 .binding = 0,
-                .format = VK_FORMAT_R32G32B32_SFLOAT,
-                .offset = offsetof(Vertex, position)
-            },
-            // Color
-            {
-                .location = 1,
-                .binding = 0,
-                .format = VK_FORMAT_R32G32B32A32_SFLOAT,
-                .offset = offsetof(Vertex, color)
-            },
-            // TexCoord
-            {
-                .location = 2,
-                .binding = 0,
-                .format = VK_FORMAT_R32G32_SFLOAT,
-                .offset = offsetof(Vertex, texCoord)
-            }
-        };
+                .format = VulkanUtils::shaderDataTypeToVkFormat(e.dataType),
+                .offset = e.offset
+            };
+            vertexInputAttributes.push_back(attribute);
+        }
 
         VkPipelineVertexInputStateCreateInfo vertexInputInfo = {
             .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,

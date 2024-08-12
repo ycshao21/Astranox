@@ -23,7 +23,13 @@ public:
         m_Shader = Astranox::VulkanShader::create(vertexShaderPath, fragmentShaderPath);
         m_Shader->createDescriptorSetLayout();
 
-        m_Pipeline = Astranox::Ref<Astranox::VulkanPipeline>::create(m_Shader);
+        Astranox::VertexBufferLayout vertexBufferLayout{
+            {Astranox::ShaderDataType::Vec3, "a_Position"},
+            {Astranox::ShaderDataType::Vec4, "a_Color"},
+            {Astranox::ShaderDataType::Vec2, "a_TexCoord"}
+        };
+
+        m_Pipeline = Astranox::Ref<Astranox::VulkanPipeline>::create(m_Shader, vertexBufferLayout);
         m_Pipeline->createPipeline();
 
         std::filesystem::path texturePath = "../Astranox-Rasterization/assets/textures/viking_room.png";
@@ -33,82 +39,76 @@ public:
         m_RoomMesh = Astranox::readMesh(meshPath);
 
 
-        std::vector<Astranox::Vertex> cubeVertices{
-            // 后面
-            { {-1.0f, -1.0f, -1.0f}, {0.2f, 0.3f, 0.7f, 1.0f}, {0.0f, 0.0f} }, // 左下后
-            { { 1.0f, -1.0f, -1.0f}, {0.2f, 0.3f, 0.7f, 1.0f}, {1.0f, 0.0f} }, // 右下后
-            { { 1.0f,  1.0f, -1.0f}, {0.2f, 0.3f, 0.7f, 1.0f}, {1.0f, 1.0f} }, // 右上后
-            { { 1.0f,  1.0f, -1.0f}, {0.2f, 0.3f, 0.7f, 1.0f}, {1.0f, 1.0f} }, // 右上后
-            { {-1.0f,  1.0f, -1.0f}, {0.2f, 0.3f, 0.7f, 1.0f}, {0.0f, 1.0f} }, // 左上后
-            { {-1.0f, -1.0f, -1.0f}, {0.2f, 0.3f, 0.7f, 1.0f}, {0.0f, 0.0f} }, // 左下后
+        // Vertex data for a cube
+        std::vector<Astranox::Vertex> cubeVertices = {
+            // Front face
+            {{-0.5f, -0.5f,  0.5f}, {0.9f, 0.4f, 0.4f, 1.0f}, {0.0f, 0.0f}},
+            {{ 0.5f, -0.5f,  0.5f}, {0.9f, 0.4f, 0.4f, 1.0f}, {1.0f, 0.0f}},
+            {{ 0.5f,  0.5f,  0.5f}, {0.9f, 0.4f, 0.4f, 1.0f}, {1.0f, 1.0f}},
+            {{-0.5f,  0.5f,  0.5f}, {0.9f, 0.4f, 0.4f, 1.0f}, {0.0f, 1.0f}},
+            
+            // Back face
+            {{ 0.5f, -0.5f, -0.5f}, {0.4f, 0.8f, 0.4f, 1.0f}, {0.0f, 0.0f}},
+            {{-0.5f, -0.5f, -0.5f}, {0.4f, 0.8f, 0.4f, 1.0f}, {1.0f, 0.0f}},
+            {{-0.5f,  0.5f, -0.5f}, {0.4f, 0.8f, 0.4f, 1.0f}, {1.0f, 1.0f}},
+            {{ 0.5f,  0.5f, -0.5f}, {0.4f, 0.8f, 0.4f, 1.0f}, {0.0f, 1.0f}},
 
-            // 前面
-            { {-1.0f, -1.0f,  1.0f}, {0.7f, 0.2f, 0.3f, 1.0f}, {0.0f, 0.0f} }, // 左下前
-            { { 1.0f, -1.0f,  1.0f}, {0.7f, 0.2f, 0.3f, 1.0f}, {1.0f, 0.0f} }, // 右下前
-            { { 1.0f,  1.0f,  1.0f}, {0.7f, 0.2f, 0.3f, 1.0f}, {1.0f, 1.0f} }, // 右上前
-            { { 1.0f,  1.0f,  1.0f}, {0.7f, 0.2f, 0.3f, 1.0f}, {1.0f, 1.0f} }, // 右上前
-            { {-1.0f,  1.0f,  1.0f}, {0.7f, 0.2f, 0.3f, 1.0f}, {0.0f, 1.0f} }, // 左上前
-            { {-1.0f, -1.0f,  1.0f}, {0.7f, 0.2f, 0.3f, 1.0f}, {0.0f, 0.0f} }, // 左下前
+            // Left face
+            {{-0.5f, -0.5f, -0.5f}, {0.4f, 0.4f, 0.8f, 1.0f}, {1.0f, 0.0f}},
+            {{-0.5f, -0.5f,  0.5f}, {0.4f, 0.4f, 0.8f, 1.0f}, {0.0f, 0.0f}},
+            {{-0.5f,  0.5f,  0.5f}, {0.4f, 0.4f, 0.8f, 1.0f}, {0.0f, 1.0f}},
+            {{-0.5f,  0.5f, -0.5f}, {0.4f, 0.4f, 0.8f, 1.0f}, {1.0f, 1.0f}},
 
-            // 左面
-            { {-1.0f,  1.0f,  1.0f}, {0.2f, 0.7f, 0.3f, 1.0f}, {1.0f, 0.0f} }, // 左上前
-            { {-1.0f,  1.0f, -1.0f}, {0.2f, 0.7f, 0.3f, 1.0f}, {1.0f, 1.0f} }, // 左上后
-            { {-1.0f, -1.0f, -1.0f}, {0.2f, 0.7f, 0.3f, 1.0f}, {0.0f, 1.0f} }, // 左下后
-            { {-1.0f, -1.0f, -1.0f}, {0.2f, 0.7f, 0.3f, 1.0f}, {0.0f, 1.0f} }, // 左下后
-            { {-1.0f, -1.0f,  1.0f}, {0.2f, 0.7f, 0.3f, 1.0f}, {0.0f, 0.0f} }, // 左下前
-            { {-1.0f,  1.0f,  1.0f}, {0.2f, 0.7f, 0.3f, 1.0f}, {1.0f, 0.0f} }, // 左上前
+            // Right face
+            {{ 0.5f, -0.5f,  0.5f}, {0.9f, 0.9f, 0.6f, 1.0f}, {0.0f, 0.0f}},
+            {{ 0.5f, -0.5f, -0.5f}, {0.9f, 0.9f, 0.6f, 1.0f}, {1.0f, 0.0f}},
+            {{ 0.5f,  0.5f, -0.5f}, {0.9f, 0.9f, 0.6f, 1.0f}, {1.0f, 1.0f}},
+            {{ 0.5f,  0.5f,  0.5f}, {0.9f, 0.9f, 0.6f, 1.0f}, {0.0f, 1.0f}},
 
-            // 右面
-            { { 1.0f,  1.0f,  1.0f}, {0.7f, 0.7f, 0.2f, 1.0f}, {1.0f, 0.0f} }, // 右上前
-            { { 1.0f,  1.0f, -1.0f}, {0.7f, 0.7f, 0.2f, 1.0f}, {1.0f, 1.0f} }, // 右上后
-            { { 1.0f, -1.0f, -1.0f}, {0.7f, 0.7f, 0.2f, 1.0f}, {0.0f, 1.0f} }, // 右下后
-            { { 1.0f, -1.0f, -1.0f}, {0.7f, 0.7f, 0.2f, 1.0f}, {0.0f, 1.0f} }, // 右下后
-            { { 1.0f, -1.0f,  1.0f}, {0.7f, 0.7f, 0.2f, 1.0f}, {0.0f, 0.0f} }, // 右下前
-            { { 1.0f,  1.0f,  1.0f}, {0.7f, 0.7f, 0.2f, 1.0f}, {1.0f, 0.0f} }, // 右上前
+            // Top face
+            {{-0.5f,  0.5f,  0.5f}, {0.6f, 0.9f, 0.9f, 1.0f}, {0.0f, 0.0f}},
+            {{ 0.5f,  0.5f,  0.5f}, {0.6f, 0.9f, 0.9f, 1.0f}, {1.0f, 0.0f}},
+            {{ 0.5f,  0.5f, -0.5f}, {0.6f, 0.9f, 0.9f, 1.0f}, {1.0f, 1.0f}},
+            {{-0.5f,  0.5f, -0.5f}, {0.6f, 0.9f, 0.9f, 1.0f}, {0.0f, 1.0f}},
 
-            // 底面
-            { {-1.0f, -1.0f, -1.0f}, {0.3f, 0.2f, 0.7f, 1.0f}, {0.0f, 1.0f} }, // 左下后
-            { { 1.0f, -1.0f, -1.0f}, {0.3f, 0.2f, 0.7f, 1.0f}, {1.0f, 1.0f} }, // 右下后
-            { { 1.0f, -1.0f,  1.0f}, {0.3f, 0.2f, 0.7f, 1.0f}, {1.0f, 0.0f} }, // 右下前
-            { { 1.0f, -1.0f,  1.0f}, {0.3f, 0.2f, 0.7f, 1.0f}, {1.0f, 0.0f} }, // 右下前
-            { {-1.0f, -1.0f,  1.0f}, {0.3f, 0.2f, 0.7f, 1.0f}, {0.0f, 0.0f} }, // 左下前
-            { {-1.0f, -1.0f, -1.0f}, {0.3f, 0.2f, 0.7f, 1.0f}, {0.0f, 1.0f} }, // 左下后
-
-            // 顶面
-            { {-1.0f,  1.0f, -1.0f}, {0.7f, 0.3f, 0.2f, 1.0f}, {0.0f, 1.0f} }, // 左上后
-            { { 1.0f,  1.0f, -1.0f}, {0.7f, 0.3f, 0.2f, 1.0f}, {1.0f, 1.0f} }, // 右上后
-            { { 1.0f,  1.0f,  1.0f}, {0.7f, 0.3f, 0.2f, 1.0f}, {1.0f, 0.0f} }, // 右上前
-            { { 1.0f,  1.0f,  1.0f}, {0.7f, 0.3f, 0.2f, 1.0f}, {1.0f, 0.0f} }, // 右上前
-            { {-1.0f,  1.0f,  1.0f}, {0.7f, 0.3f, 0.2f, 1.0f}, {0.0f, 0.0f} }, // 左上前
-            { {-1.0f,  1.0f, -1.0f}, {0.7f, 0.3f, 0.2f, 1.0f}, {0.0f, 1.0f} }  // 左上后
+            // Bottom face
+            {{-0.5f, -0.5f, -0.5f}, {0.9f, 0.6f, 0.9f, 1.0f}, {1.0f, 1.0f}},
+            {{ 0.5f, -0.5f, -0.5f}, {0.9f, 0.6f, 0.9f, 1.0f}, {0.0f, 1.0f}},
+            {{ 0.5f, -0.5f,  0.5f}, {0.9f, 0.6f, 0.9f, 1.0f}, {0.0f, 0.0f}},
+            {{-0.5f, -0.5f,  0.5f}, {0.9f, 0.6f, 0.9f, 1.0f}, {1.0f, 0.0f}}
         };
 
-        std::vector<Astranox::Index> cubeIndices{
-            // 后面
-            0, 1, 2,    // 第一个三角形
-            2, 3, 0,    // 第二个三角形
-
-            // 前面
-            4, 5, 6,    // 第一个三角形
-            6, 7, 4,    // 第二个三角形
-
-            // 左面
-            8, 9, 10,   // 第一个三角形
-            10, 11, 8,  // 第二个三角形
-
-            // 右面
-            12, 13, 14, // 第一个三角形
-            14, 15, 12, // 第二个三角形
-
-            // 底面
-            16, 17, 18, // 第一个三角形
-            18, 19, 16, // 第二个三角形
-
-            // 顶面
-            20, 21, 22, // 第一个三角形
-            22, 23, 20  // 第二个三角形
+        std::vector<uint32_t> cubeIndices = {
+            // Front face
+            0, 1, 2, 2, 3, 0,
+            // Back face
+            4, 5, 6, 6, 7, 4,
+            // Left face
+            8, 9, 10, 10, 11, 8,
+            // Right face
+            12, 13, 14, 14, 15, 12,
+            // Top face
+            16, 17, 18, 18, 19, 16,
+            // Bottom face
+            20, 21, 22, 22, 23, 20
         };
         m_CubeMesh = Astranox::Mesh(cubeVertices, cubeIndices);
+
+        std::vector<Astranox::Vertex> tetrahedronVertices = {
+            {{2.0f, sqrt(2.0f / 3.0f), 0.0f}, {0.95f, 0.77f, 0.52f, 1.0f}, {0.5f, 1.0f}},
+            {{1.5f, 0.0f, -sqrt(3.0f) * 0.5f}, {0.67f, 0.85f, 0.91f, 1.0f}, {0.0f, 0.0f}},
+            {{2.5f, 0.0f, -sqrt(3.0f) * 0.5f}, {0.82f, 0.56f, 0.74f, 1.0f}, {1.0f, 0.0f}},
+            {{2.0f, 0.0f, sqrt(3.0f) * 0.5f}, {0.59f, 0.44f, 0.84f, 1.0f}, {0.5f, 0.0f}}
+        };
+
+        std::vector<uint32_t> tetrahedronIndices = {
+            0, 1, 2,  // 面1
+            0, 2, 3,  // 面2
+            0, 3, 1,  // 面3
+            1, 3, 2   // 底面
+        };
+
+        m_TetrahedronMesh = Astranox::Mesh(tetrahedronVertices, tetrahedronIndices);
 
 
         m_SceneUBA = Astranox::UniformBufferArray::create(sizeof(SceneData));
@@ -145,9 +145,9 @@ public:
         // [TODO] Move this to Renderer->BeginScene()
         // Update uniform buffer
         SceneData sceneData;
-        sceneData.model = glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f)) * glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        //sceneData.model = glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f)) * glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        sceneData.model = glm::mat4(1.0f);
         sceneData.projection = m_Camera->getProjectionMatrix();
-        sceneData.projection[1][1] *= -1.0f; // Flip the Y axis for Vulkan [0, height] to [height, 0]
         sceneData.view = m_Camera->getViewMatrix();
 
         m_SceneUBA->getCurrentBuffer()->setData(&sceneData);
@@ -167,8 +167,9 @@ public:
             m_DescriptorManager->getDescriptorSets()
         );
 
-        m_Renderer->render(swapchain->getCurrentCommandBuffer(), m_Pipeline, m_RoomMesh.getVertexBuffer(), m_RoomMesh.getIndexBuffer(), 1);
-        //m_Renderer->render(swapchain->getCurrentCommandBuffer(), m_Pipeline, m_CubeMesh.getVertexBuffer(), m_CubeMesh.getIndexBuffer(), 1);
+        //m_Renderer->render(swapchain->getCurrentCommandBuffer(), m_Pipeline, m_RoomMesh.getVertexBuffer(), m_RoomMesh.getIndexBuffer(), 1);
+        m_Renderer->render(swapchain->getCurrentCommandBuffer(), m_Pipeline, m_CubeMesh.getVertexBuffer(), m_CubeMesh.getIndexBuffer(), 1);
+        m_Renderer->render(swapchain->getCurrentCommandBuffer(), m_Pipeline, m_TetrahedronMesh.getVertexBuffer(), m_TetrahedronMesh.getIndexBuffer(), 1);
 
         // End render pass
         m_Renderer->endRenderPass(swapchain->getCurrentCommandBuffer());
@@ -191,6 +192,7 @@ private:
 
     Astranox::Mesh m_RoomMesh;
     Astranox::Mesh m_CubeMesh;
+    Astranox::Mesh m_TetrahedronMesh;
 
     Astranox::Ref<Astranox::UniformBufferArray> m_SceneUBA = nullptr;
 

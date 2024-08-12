@@ -61,12 +61,13 @@ namespace Astranox
         };
         ::vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-
+        // [NOTE] The origin (0, 0) is in the top-left corner in Vulkan,
+        //      so we need to flip the Y-axis.
         VkViewport viewport = {
             .x = 0.0f,
-            .y = 0.0f,
+            .y = static_cast<float>(swapchain->getExtent().height),
             .width = static_cast<float>(swapchain->getExtent().width),
-            .height = static_cast<float>(swapchain->getExtent().height),
+            .height = -static_cast<float>(swapchain->getExtent().height),
             .minDepth = 0.0f,
             .maxDepth = 1.0f,
         };

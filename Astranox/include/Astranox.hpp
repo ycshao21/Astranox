@@ -8,6 +8,7 @@
 
 #include "Astranox/rendering/Renderer.hpp"
 #include "Astranox/rendering/Mesh.hpp"
+#include "Astranox/rendering/VertexBufferLayout.hpp"
 
 #include "Astranox/platform/vulkan/VulkanContext.hpp"
 #include "Astranox/platform/vulkan/VulkanTexture.hpp"
