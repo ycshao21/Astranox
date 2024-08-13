@@ -35,8 +35,8 @@ namespace Astranox
         VulkanBufferManager::destroyBuffer(m_UniformBuffer, m_UniformBufferMemory);
     }
 
-    void VulkanUniformBuffer::setData(const void* data)
+    void VulkanUniformBuffer::setData(const void* data, uint32_t bytes, uint32_t offset)
     {
-        std::memcpy(m_MappedUniformBuffer, data, m_Bytes);
+        std::memcpy(m_MappedUniformBuffer, (const uint8_t*)data + offset, bytes);
     }
 }

@@ -42,10 +42,10 @@ namespace Astranox
         VkRenderPass getRenderPass() { return m_RenderPass; }
         uint32_t getImageCount() const { return m_Images.size(); }
 
-        uint32_t getCurrentFrameIndex() const { return m_CurrentFrameIndex; }
+        //uint32_t getCurrentFrameIndex() const { return m_CurrentFrameIndex; }
 
         VkFramebuffer getCurrentFramebuffer() { return m_Framebuffers[m_CurrentImageIndex]; }
-        VkCommandBuffer getCurrentCommandBuffer() { return m_CommandBuffers[m_CurrentFrameIndex]; }
+        VkCommandBuffer getCurrentCommandBuffer();
 
     private:
         void chooseSurfaceFormat();
@@ -88,7 +88,7 @@ namespace Astranox
         VkRenderPass m_RenderPass = VK_NULL_HANDLE;
 
         std::vector<VkFramebuffer> m_Framebuffers;
-        uint32_t m_CurrentFrameIndex = 0;
+        //uint32_t m_CurrentFrameIndex = 0;
         uint32_t m_CurrentImageIndex = 0;
 
         std::vector<VkCommandBuffer> m_CommandBuffers;

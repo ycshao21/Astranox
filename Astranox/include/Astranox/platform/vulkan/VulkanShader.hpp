@@ -11,7 +11,7 @@ namespace Astranox
         friend class VulkanPipeline;
 
     public:
-        VulkanShader(const std::filesystem::path& vertexPath, const std::filesystem::path& fragmentPath);
+        VulkanShader(const std::string& name, const std::filesystem::path& vertexPath, const std::filesystem::path& fragmentPath);
         virtual ~VulkanShader();
 
         virtual void createShaders(const std::vector<char>& vertexCode, const std::vector<char>& fragmentCode) override;
@@ -21,6 +21,8 @@ namespace Astranox
 
         virtual void bind() override;
         virtual void unbind() override;
+
+        virtual const std::string& getName() const override { return m_Name; }
 
         VkShaderModule getVertexShader() const { return m_VertexShaderModule; }
         VkShaderModule getFragmentShader() const { return m_FragmentShaderModule; }
@@ -34,6 +36,8 @@ namespace Astranox
         std::vector<char> readCompiledShaderFile(const std::filesystem::path& codeFile);
 
     private:
+        std::string m_Name;
+
         VkShaderModule m_VertexShaderModule = VK_NULL_HANDLE;
         VkShaderModule m_FragmentShaderModule = VK_NULL_HANDLE;
 

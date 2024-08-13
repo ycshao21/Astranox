@@ -15,7 +15,9 @@ namespace Astranox
 
         void init(VkDescriptorSetLayout layout, VkSampler sampler, VkImageView imageView, Ref<UniformBufferArray> uba);
 
-        const std::vector<VkDescriptorSet>& getDescriptorSets() const { return m_DescriptorSets; }
+        const std::vector<VkDescriptorSet>& getDescriptorSets() const { 
+            return m_DescriptorSets;
+        }
 
     private:
         VkDescriptorPool m_DescriptorPool = VK_NULL_HANDLE;

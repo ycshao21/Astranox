@@ -111,13 +111,13 @@ namespace Astranox
             VK_CHECK(::vkCreateSampler(device->getRaw(), &samplerInfo, nullptr, &m_TextureSampler));
             // <<< Texture sampler
         }
+
+        stbi_image_free(m_Buffer.data);
     }
 
     VulkanTexture::~VulkanTexture()
     {
         VkDevice device = VulkanContext::get()->getDevice()->getRaw();
-
-        stbi_image_free(m_Buffer.data);
 
         ::vkDestroySampler(device, m_TextureSampler, nullptr);
         ::vkDestroyImageView(device, m_TextureImageView, nullptr);

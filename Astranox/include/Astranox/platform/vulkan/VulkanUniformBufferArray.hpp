@@ -1,5 +1,6 @@
 #pragma once
 #include "Astranox/rendering/UniformBufferArray.hpp"
+#include "Astranox/rendering/Renderer.hpp"
 #include "VulkanContext.hpp"
 
 namespace Astranox
@@ -17,8 +18,9 @@ namespace Astranox
 
         Ref<UniformBuffer> getCurrentBuffer() override
         {
-            auto swapchain = VulkanContext::get()->getSwapchain();
-            uint32_t currentFrameIndex = swapchain->getCurrentFrameIndex();
+            //auto swapchain = VulkanContext::get()->getSwapchain();
+            //uint32_t currentFrameIndex = swapchain->getCurrentFrameIndex();
+            uint32_t currentFrameIndex = Renderer::getCurrentFrameIndex();
             return m_UniformBuffers[currentFrameIndex];
         }
 

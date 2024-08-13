@@ -67,6 +67,8 @@ namespace Astranox
                 // Update the window
                 m_Window->swapBuffers();
             }
+
+            m_CurrentFrameIndex = (m_CurrentFrameIndex + 1) % Renderer::getConfig().framesInFlight;
         }
     }
 

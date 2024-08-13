@@ -29,7 +29,8 @@ namespace Astranox
         return code;
     }
 
-    VulkanShader::VulkanShader(const std::filesystem::path& vertexPath, const std::filesystem::path& fragmentPath)
+    VulkanShader::VulkanShader(const std::string& name, const std::filesystem::path& vertexPath, const std::filesystem::path& fragmentPath)
+        : m_Name(name)
     {
         auto vertexCode = readCompiledShaderFile(vertexPath);
         auto fragmentCode = readCompiledShaderFile(fragmentPath);

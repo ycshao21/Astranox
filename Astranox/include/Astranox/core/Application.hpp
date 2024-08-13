@@ -36,6 +36,8 @@ namespace Astranox
         inline static Application& get() { return *s_Instance; }
         inline virtual Window& getWindow() const final { return *m_Window; }
 
+        inline uint32_t getCurrentFrameIndex() const { return m_CurrentFrameIndex; }
+
     public: // Layer management
         virtual void pushLayer(Layer* layer) final;
         virtual void pushOverlay(Layer* overlay) final;
@@ -55,6 +57,7 @@ namespace Astranox
 
         Timestep m_Timestep;
         float m_LastFrameTime = 0.0f;
+        uint32_t m_CurrentFrameIndex = 0;
     };
 
     /**

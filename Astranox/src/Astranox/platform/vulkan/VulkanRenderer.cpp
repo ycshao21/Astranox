@@ -6,18 +6,11 @@
 #include "Astranox/platform/vulkan/VulkanIndexBuffer.hpp"
 #include "Astranox/platform/vulkan/VulkanUtils.hpp"
 
+#include "Astranox/rendering/Renderer.hpp"
+
 namespace Astranox
 {
     VulkanRenderer::VulkanRenderer()
-    {
-    }
-
-    void VulkanRenderer::init()
-    {
-
-    }
-
-    void VulkanRenderer::shutdown()
     {
     }
 
@@ -79,7 +72,8 @@ namespace Astranox
         };
         vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->getLayout(), 0, 1, &descriptorSets[swapchain->getCurrentFrameIndex()], 0, nullptr);
+        uint32_t currentFrameIndex = Renderer::getCurrentFrameIndex();
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->getLayout(), 0, 1, &descriptorSets[currentFrameIndex], 0, nullptr);
 
         // Bind pipeline
         VkPipeline graphicsPipeline = pipeline->getRaw();
@@ -91,26 +85,21 @@ namespace Astranox
         ::vkCmdEndRenderPass(commandBuffer);
     }
 
-    void VulkanRenderer::render(
+    void VulkanRenderer::renderMesh(
         VkCommandBuffer commandBuffer,
         Ref<VulkanPipeline> pipeline,
-        Ref<VertexBuffer> vertexBuffer,
-        Ref<IndexBuffer> indexBuffer,
+        Mesh& mesh,
         uint32_t instanceCount
     )
     {
-        //vertexBuffer->bind();
-        // ^^^^
         VkDeviceSize offsets[] = { 0 };
-        VkBuffer vb = vertexBuffer.as<VulkanVertexBuffer>()->getRaw();
+        VkBuffer vb = mesh.getVertexBuffer().as<VulkanVertexBuffer>()->getRaw();
         vkCmdBindVertexBuffers(commandBuffer, 0, 1, &vb, offsets);
 
-        //indexBuffer->bind();
-        // ^^^^
-        VkBuffer ib = indexBuffer.as<VulkanIndexBuffer>()->getRaw();
+        VkBuffer ib = mesh.getIndexBuffer().as<VulkanIndexBuffer>()->getRaw();
         vkCmdBindIndexBuffer(commandBuffer, ib, 0, VK_INDEX_TYPE_UINT32);
 
-        vkCmdDrawIndexed(commandBuffer, indexBuffer->getCount(), instanceCount, 0, 0, 0);
+        vkCmdDrawIndexed(commandBuffer, mesh.getIndexBuffer()->getCount(), instanceCount, 0, 0, 0);
     }
 }
 

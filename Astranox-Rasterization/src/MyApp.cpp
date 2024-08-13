@@ -1,6 +1,7 @@
 #include <Astranox.hpp>
 
 #include "TempLayer.hpp"
+#include "Sandbox.hpp"
 
 class MyApp : public Astranox::Application
 {
@@ -8,7 +9,8 @@ public:
     MyApp(const Astranox::ApplicationSpecification& spec)
         : Astranox::Application(spec)
     {
-        pushLayer(new TempLayer());
+        //pushLayer(new TempLayer());
+        pushLayer(new SandboxLayer());
     }
 
     virtual ~MyApp() = default;

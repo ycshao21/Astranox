@@ -10,7 +10,7 @@ namespace Astranox
         VulkanUniformBuffer(uint32_t bytes);
         virtual ~VulkanUniformBuffer();
 
-        virtual void setData(const void* data) override;
+        virtual void setData(const void* data, uint32_t bytes, uint32_t offset) override;
 
         const VkDescriptorBufferInfo& getDescriptorBufferInfo() const { return m_DescriptorBufferInfo; }
 

@@ -9,6 +9,7 @@
 #include "Astranox/platform/vulkan/VulkanUniformBuffer.hpp"
 
 #include "Astranox/core/Application.hpp"
+#include "Astranox/rendering/Renderer.hpp"
 
 #include <GLFW/glfw3.h>
 
@@ -252,14 +253,16 @@ namespace Astranox
 
     void VulkanSwapchain::beginFrame()
     {
-        ::vkWaitForFences(m_Device->getRaw(), 1, &m_InFlightFences[m_CurrentFrameIndex], VK_TRUE, std::numeric_limits<uint64_t>::max());
-        ::vkResetFences(m_Device->getRaw(), 1, &m_InFlightFences[m_CurrentFrameIndex]);
+        uint32_t currentFrameIndex = Renderer::getCurrentFrameIndex();
+
+        ::vkWaitForFences(m_Device->getRaw(), 1, &m_InFlightFences[currentFrameIndex], VK_TRUE, std::numeric_limits<uint64_t>::max());
+        ::vkResetFences(m_Device->getRaw(), 1, &m_InFlightFences[currentFrameIndex]);
 
         VkResult result = ::vkAcquireNextImageKHR(
             m_Device->getRaw(),
             m_Swapchain,
             std::numeric_limits<uint64_t>::max(),
-            m_ImageAvailableSemaphores[m_CurrentFrameIndex],
+            m_ImageAvailableSemaphores[currentFrameIndex],
             VK_NULL_HANDLE,
             &m_CurrentImageIndex
         );
@@ -275,8 +278,10 @@ namespace Astranox
 
     void VulkanSwapchain::present()
     {
-        std::vector<VkSemaphore> waitSemaphores = { m_ImageAvailableSemaphores[m_CurrentFrameIndex]};
-        std::vector<VkSemaphore> signalSemaphores = { m_RenderFinishedSemaphores[m_CurrentFrameIndex]};
+        uint32_t currentFrameIndex = Renderer::getCurrentFrameIndex();
+
+        std::vector<VkSemaphore> waitSemaphores = { m_ImageAvailableSemaphores[currentFrameIndex]};
+        std::vector<VkSemaphore> signalSemaphores = { m_RenderFinishedSemaphores[currentFrameIndex]};
         std::vector<VkPipelineStageFlags> waitStages = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 
         VkSubmitInfo submitInfo{
@@ -285,12 +290,12 @@ namespace Astranox
             .pWaitSemaphores = waitSemaphores.data(),
             .pWaitDstStageMask = waitStages.data(),
             .commandBufferCount = 1,
-            .pCommandBuffers = &m_CommandBuffers[m_CurrentFrameIndex],
+            .pCommandBuffers = &m_CommandBuffers[currentFrameIndex],
             .signalSemaphoreCount = static_cast<uint32_t>(signalSemaphores.size()),
             .pSignalSemaphores = signalSemaphores.data()
         };
 
-        VK_CHECK(::vkQueueSubmit(m_Device->getGraphicsQueue(), 1, &submitInfo, m_InFlightFences[m_CurrentFrameIndex]));
+        VK_CHECK(::vkQueueSubmit(m_Device->getGraphicsQueue(), 1, &submitInfo, m_InFlightFences[currentFrameIndex]));
 
         VkPresentInfoKHR presentInfo{
             .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
@@ -309,9 +314,11 @@ namespace Astranox
         } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
             VK_CHECK(result);
         }
+    }
 
-        uint32_t framesInFlight = m_Images.size();
-        m_CurrentFrameIndex = (m_CurrentFrameIndex + 1) % framesInFlight;
+    inline VkCommandBuffer VulkanSwapchain::getCurrentCommandBuffer()
+    {
+        return m_CommandBuffers[Renderer::getCurrentFrameIndex()];
     }
 
     void VulkanSwapchain::chooseSurfaceFormat()

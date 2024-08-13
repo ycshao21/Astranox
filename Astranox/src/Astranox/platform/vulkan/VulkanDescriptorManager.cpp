@@ -63,8 +63,8 @@ namespace Astranox
         m_DescriptorSets.resize(framesInFlight);
         VK_CHECK(::vkAllocateDescriptorSets(device->getRaw(), &allocInfo, m_DescriptorSets.data()));
 
-        for (uint32_t i = 0; i < framesInFlight; i++)
-        {
+
+        for (uint32_t i = 0; i < framesInFlight; i++) {
             // Sampler
             VkDescriptorImageInfo imageInfo{
                 .sampler = sampler,
