@@ -1,7 +1,7 @@
 #include "pch.hpp"
 #include "Astranox/platform/vulkan/VulkanTexture.hpp"
 
-#include "Astranox/platform/vulkan/VulkanBufferManager.hpp"
+#include "Astranox/platform/vulkan/VulkanMemoryAllocator.hpp"
 #include "Astranox/platform/vulkan/VulkanContext.hpp"
 #include "Astranox/platform/vulkan/VulkanUtils.hpp"
 
@@ -21,7 +21,7 @@ namespace Astranox
             // Texture image >>>
             VkBuffer stagingBuffer;
             VkDeviceMemory stagingBufferMemory;
-            VulkanBufferManager::createBuffer(
+            VulkanMemoryAllocator::createBuffer(
                 m_Buffer.size,
                 VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
@@ -38,7 +38,7 @@ namespace Astranox
                                                   VK_IMAGE_USAGE_TRANSFER_DST_BIT |
                                                   VK_IMAGE_USAGE_SAMPLED_BIT;
 
-            VulkanBufferManager::createImage(
+            VulkanMemoryAllocator::createImage(
                 m_Width,
                 m_Height,
                 m_TextureMipLevels,
@@ -51,7 +51,7 @@ namespace Astranox
                 m_TextureImageMemory
             );
 
-            VulkanBufferManager::transitionImageLayout(
+            VulkanMemoryAllocator::transitionImageLayout(
                 m_TextureImage,
                 VK_FORMAT_R8G8B8A8_SRGB,
                 VK_IMAGE_LAYOUT_UNDEFINED,
@@ -59,7 +59,7 @@ namespace Astranox
                 m_TextureMipLevels
             );
 
-            VulkanBufferManager::copyBufferToImage(
+            VulkanMemoryAllocator::copyBufferToImage(
                 stagingBuffer,
                 m_TextureImage,
                 m_Width,
@@ -75,7 +75,7 @@ namespace Astranox
 
             generateMipmaps();
 
-            VulkanBufferManager::destroyBuffer(stagingBuffer, stagingBufferMemory);
+            VulkanMemoryAllocator::destroyBuffer(stagingBuffer, stagingBufferMemory);
             // <<< Texture image
 
             // Texture image view >>>

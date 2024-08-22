@@ -3,7 +3,7 @@
 
 namespace Astranox
 {
-    class VulkanBufferManager
+    class VulkanMemoryAllocator
     {
     public:
         static void createBuffer(

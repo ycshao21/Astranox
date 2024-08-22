@@ -1,12 +1,12 @@
 #include "pch.hpp"
-#include "Astranox/platform/vulkan/VulkanBufferManager.hpp"
+#include "Astranox/platform/vulkan/VulkanMemoryAllocator.hpp"
 #include "Astranox/platform/vulkan/VulkanContext.hpp"
 #include "Astranox/platform/vulkan/VulkanUtils.hpp"
 
 namespace Astranox
 {
 
-    void VulkanBufferManager::createBuffer(
+    void VulkanMemoryAllocator::createBuffer(
         VkDeviceSize bufferSize,
         VkBufferUsageFlags usage,
         VkMemoryPropertyFlags properties,
@@ -49,7 +49,7 @@ namespace Astranox
         VK_CHECK(::vkBindBufferMemory(device->getRaw(), buffer, bufferMemory, 0));
     }
 
-    void VulkanBufferManager::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
+    void VulkanMemoryAllocator::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
     {
         auto device = VulkanContext::get()->getDevice();
         auto commandPool = device->getCommandPool();
@@ -67,7 +67,7 @@ namespace Astranox
         commandPool->endOneTimeBuffer(commandBuffer);
     }
 
-    void VulkanBufferManager::destroyBuffer(VkBuffer buffer, VkDeviceMemory bufferMemory)
+    void VulkanMemoryAllocator::destroyBuffer(VkBuffer buffer, VkDeviceMemory bufferMemory)
     {
         VkDevice device = VulkanContext::get()->getDevice()->getRaw();
 
@@ -75,7 +75,7 @@ namespace Astranox
         ::vkFreeMemory(device, bufferMemory, nullptr);
     }
 
-    void VulkanBufferManager::createImage(
+    void VulkanMemoryAllocator::createImage(
         uint32_t width,
         uint32_t height,
         uint32_t mipLevels,
@@ -135,7 +135,7 @@ namespace Astranox
         VK_CHECK(::vkBindImageMemory(device->getRaw(), image, imageMemory, 0));
     }
 
-    void VulkanBufferManager::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height)
+    void VulkanMemoryAllocator::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height)
     {
         auto device = VulkanContext::get()->getDevice();
         auto commandPool = device->getCommandPool();
@@ -169,7 +169,7 @@ namespace Astranox
         commandPool->endOneTimeBuffer(commandBuffer);
     }
 
-    void VulkanBufferManager::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels)
+    void VulkanMemoryAllocator::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels)
     {
         auto device = VulkanContext::get()->getDevice();
         auto commandPool = device->getCommandPool();

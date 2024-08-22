@@ -3,7 +3,7 @@
 
 #include "Astranox/platform/vulkan/VulkanSwapchain.hpp"
 #include "Astranox/platform/vulkan/VulkanContext.hpp"
-#include "Astranox/platform/vulkan/VulkanBufferManager.hpp"
+#include "Astranox/platform/vulkan/VulkanMemoryAllocator.hpp"
 #include "Astranox/platform/vulkan/VulkanUtils.hpp"
 
 #include "Astranox/platform/vulkan/VulkanUniformBuffer.hpp"
@@ -164,7 +164,7 @@ namespace Astranox
             ::vkFreeMemory(m_Device->getRaw(), m_DepthStencil.memory, nullptr);
         }
         uint32_t depthMipLevels = 1;
-        VulkanBufferManager::createImage(
+        VulkanMemoryAllocator::createImage(
             m_SwapchainExtent.width,
             m_SwapchainExtent.height,
             depthMipLevels,

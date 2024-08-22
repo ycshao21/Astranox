@@ -1,7 +1,7 @@
 #include "pch.hpp"
 #include "Astranox/platform/vulkan/VulkanIndexBuffer.hpp"
 #include "Astranox/platform/vulkan/VulkanContext.hpp"
-#include "Astranox/platform/vulkan/VulkanBufferManager.hpp"
+#include "Astranox/platform/vulkan/VulkanMemoryAllocator.hpp"
 #include "Astranox/platform/vulkan/VulkanUtils.hpp"
 
 namespace Astranox
@@ -14,7 +14,7 @@ namespace Astranox
         VkBuffer stagingBuffer;
         VkDeviceMemory stagingBufferMemory;
 
-        VulkanBufferManager::createBuffer(
+        VulkanMemoryAllocator::createBuffer(
             bytes,
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
@@ -28,19 +28,19 @@ namespace Astranox
         std::memcpy(dest, data, bytes);
         ::vkUnmapMemory(m_Device->getRaw(), stagingBufferMemory);
 
-        VulkanBufferManager::createBuffer(
+        VulkanMemoryAllocator::createBuffer(
             bytes,
             VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
             m_IndexBuffer,
             m_IndexBufferMemory
         );
-        VulkanBufferManager::copyBuffer(
+        VulkanMemoryAllocator::copyBuffer(
             stagingBuffer,
             m_IndexBuffer,
             bytes
         );
-        VulkanBufferManager::destroyBuffer(
+        VulkanMemoryAllocator::destroyBuffer(
             stagingBuffer,
             stagingBufferMemory
         );
@@ -48,7 +48,7 @@ namespace Astranox
 
     VulkanIndexBuffer::~VulkanIndexBuffer()
     {
-        VulkanBufferManager::destroyBuffer(
+        VulkanMemoryAllocator::destroyBuffer(
             m_IndexBuffer,
             m_IndexBufferMemory
         );

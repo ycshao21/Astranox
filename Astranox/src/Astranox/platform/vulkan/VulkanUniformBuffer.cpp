@@ -1,5 +1,5 @@
 #include "pch.hpp"
-#include "Astranox/platform/vulkan/VulkanBufferManager.hpp"
+#include "Astranox/platform/vulkan/VulkanMemoryAllocator.hpp"
 #include "Astranox/platform/vulkan/VulkanUniformBuffer.hpp"
 #include "Astranox/platform/vulkan/VulkanContext.hpp"
 #include "Astranox/platform/vulkan/VulkanUtils.hpp"
@@ -11,7 +11,7 @@ namespace Astranox
     {
         m_Device = VulkanContext::get()->getDevice();
 
-        VulkanBufferManager::createBuffer(
+        VulkanMemoryAllocator::createBuffer(
             bytes,
             VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
@@ -32,7 +32,7 @@ namespace Astranox
     {
         ::vkUnmapMemory(m_Device->getRaw(), m_UniformBufferMemory);
 
-        VulkanBufferManager::destroyBuffer(m_UniformBuffer, m_UniformBufferMemory);
+        VulkanMemoryAllocator::destroyBuffer(m_UniformBuffer, m_UniformBufferMemory);
     }
 
     void VulkanUniformBuffer::setData(const void* data, uint32_t bytes, uint32_t offset)
