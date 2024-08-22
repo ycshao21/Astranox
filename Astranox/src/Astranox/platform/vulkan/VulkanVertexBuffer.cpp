@@ -10,12 +10,18 @@ namespace Astranox
     {
         m_Device = VulkanContext::get()->getDevice();
 
-        VulkanMemoryAllocator::createBuffer(
-            bytes,
-            VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-            m_VertexBuffer,
-            m_VertexBufferMemory
+        VulkanMemoryAllocator allocator("VulkanVertexBuffer");
+
+        VkBufferCreateInfo vertexBufferCI{
+            .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+            .size = bytes,
+            .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+            .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+        };
+        m_VertexBufferAllocation = allocator.createBuffer(
+            vertexBufferCI,
+            VMA_MEMORY_USAGE_CPU_TO_GPU,
+            m_VertexBuffer
         );
     }
 
@@ -23,54 +29,56 @@ namespace Astranox
     {
         m_Device = VulkanContext::get()->getDevice();
 
-        VkBuffer stagingBuffer;
-        VkDeviceMemory stagingBufferMemory;
+        VulkanMemoryAllocator allocator("VulkanVertexBuffer");
 
-        VulkanMemoryAllocator::createBuffer(
-            bytes,
-            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-            stagingBuffer,
-            stagingBufferMemory
+        VkBufferCreateInfo stagingBufferCI{
+            .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+            .size = bytes,
+            .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+            .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+        };
+
+        VkBuffer stagingBuffer;
+        VmaAllocation stagingBufferMemory = allocator.createBuffer(
+            stagingBufferCI,
+            VMA_MEMORY_USAGE_CPU_TO_GPU,
+            stagingBuffer
         );
 
         // Upload data to staging buffer
-        void* dest = nullptr;
-        VK_CHECK(::vkMapMemory(m_Device->getRaw(), stagingBufferMemory, 0, bytes, 0, &dest));
+        void* dest = allocator.mapMemory<void>(stagingBufferMemory);
         std::memcpy(dest, data, bytes);
-        ::vkUnmapMemory(m_Device->getRaw(), stagingBufferMemory);
+        allocator.unmapMemory(stagingBufferMemory);
 
-        VulkanMemoryAllocator::createBuffer(
-            bytes,
-            VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-            m_VertexBuffer,
-            m_VertexBufferMemory
+        VkBufferCreateInfo vertexBufferCI{
+            .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+            .size = bytes,
+            .usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+            .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+        };
+
+        m_VertexBufferAllocation = allocator.createBuffer(
+            vertexBufferCI,
+            VMA_MEMORY_USAGE_GPU_ONLY,
+            m_VertexBuffer
         );
-        VulkanMemoryAllocator::copyBuffer(
-            stagingBuffer,
-            m_VertexBuffer,
-            bytes
-        );
-        VulkanMemoryAllocator::destroyBuffer(
-            stagingBuffer,
-            stagingBufferMemory
-        );
+
+        allocator.copyBuffer(stagingBuffer, m_VertexBuffer, bytes);
+
+        allocator.destroyBuffer(stagingBuffer, stagingBufferMemory);
     }
 
     VulkanVertexBuffer::~VulkanVertexBuffer()
     {
-        VulkanMemoryAllocator::destroyBuffer(
-            m_VertexBuffer,
-            m_VertexBufferMemory
-        );
+        VulkanMemoryAllocator allocator("VulkanVertexBuffer");
+        allocator.destroyBuffer(m_VertexBuffer, m_VertexBufferAllocation);
     }
 
     void VulkanVertexBuffer::setData(const void* data, uint32_t bytes)
     {
-        void* dest = nullptr;
-        VK_CHECK(::vkMapMemory(m_Device->getRaw(), m_VertexBufferMemory, 0, bytes, 0, &dest));
+        VulkanMemoryAllocator allocator("VulkanVertexBuffer");
+        void* dest = allocator.mapMemory<void>(m_VertexBufferAllocation);
         std::memcpy(dest, data, bytes);
-        ::vkUnmapMemory(m_Device->getRaw(), m_VertexBufferMemory);
+        allocator.unmapMemory(m_VertexBufferAllocation);
     }
 }

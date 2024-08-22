@@ -45,6 +45,9 @@ dependencies = {
 	tiny_obj_loader = {
 		includeDir = "%{wks.location}/Astranox/vendor/tiny_obj_loader",
 	},
+	vulkan_memory_allocator = {
+		includeDir = "%{wks.location}/Astranox/vendor/vulkan_memory_allocator",
+	},
 }
 
 

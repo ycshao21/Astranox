@@ -3,6 +3,7 @@
 #include "Astranox/platform/vulkan/VulkanContext.hpp"
 #include "Astranox/platform/vulkan/VulkanPhysicalDevice.hpp"
 #include "Astranox/platform/vulkan/VulkanDevice.hpp"
+#include "Astranox/platform/vulkan/VulkanMemoryAllocator.hpp"
 #include "Astranox/platform/vulkan/VulkanSwapchain.hpp"
 #include "Astranox/platform/vulkan/VulkanUtils.hpp"
 
@@ -37,6 +38,8 @@ namespace Astranox
         m_PhysicalDevice = VulkanPhysicalDevice::pick();
         m_Device = Ref<VulkanDevice>::create(m_PhysicalDevice);
 
+        VulkanMemoryAllocator::init(m_Device);
+
         m_Swapchain = Ref<VulkanSwapchain>::create(m_Device);
         m_Swapchain->createSurface();
         m_Swapchain->createSwapchain(width, height);
@@ -46,6 +49,8 @@ namespace Astranox
     {
         m_Swapchain->destroy();
         m_Swapchain = nullptr;
+
+        VulkanMemoryAllocator::shutdown();
 
         m_Device->destroy();
         m_Device = nullptr;

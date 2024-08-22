@@ -2,6 +2,7 @@
 #include "Astranox/rendering/Texture.hpp"
 #include <filesystem>
 #include <vulkan/vulkan.h>
+#include "vk_mem_alloc.h"
 
 namespace Astranox
 {
@@ -53,7 +54,7 @@ namespace Astranox
         uint32_t m_TextureMipLevels = 1;
 
         VkImage m_TextureImage;
-        VkDeviceMemory m_TextureImageMemory;
+        VmaAllocation m_TextureImageAllocation;
         VkImageView m_TextureImageView;
         VkSampler m_TextureSampler;
     }; 

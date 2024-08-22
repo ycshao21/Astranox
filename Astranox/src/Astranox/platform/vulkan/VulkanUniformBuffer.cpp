@@ -10,16 +10,21 @@ namespace Astranox
         : m_Bytes(bytes)
     {
         m_Device = VulkanContext::get()->getDevice();
+        VulkanMemoryAllocator allocator("VulkanUniformBuffer");
 
-        VulkanMemoryAllocator::createBuffer(
-            bytes,
-            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-            m_UniformBuffer,
-            m_UniformBufferMemory
+        VkBufferCreateInfo uniformBufferCI{
+            .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+            .size = bytes,
+            .usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+            .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+        };
+        m_UniformBufferAllocation = allocator.createBuffer(
+            uniformBufferCI,
+            VMA_MEMORY_USAGE_CPU_TO_GPU,
+            m_UniformBuffer
         );
 
-        VK_CHECK(::vkMapMemory(m_Device->getRaw(), m_UniformBufferMemory, 0, bytes, 0, &m_MappedUniformBuffer));
+        m_MappedUniformBuffer = allocator.mapMemory<void>(m_UniformBufferAllocation);
 
         m_DescriptorBufferInfo = {
             .buffer = m_UniformBuffer,
@@ -30,9 +35,9 @@ namespace Astranox
 
     VulkanUniformBuffer::~VulkanUniformBuffer()
     {
-        ::vkUnmapMemory(m_Device->getRaw(), m_UniformBufferMemory);
-
-        VulkanMemoryAllocator::destroyBuffer(m_UniformBuffer, m_UniformBufferMemory);
+        VulkanMemoryAllocator allocator("VulkanUniformBuffer");
+        allocator.unmapMemory(m_UniformBufferAllocation);
+        allocator.destroyBuffer(m_UniformBuffer, m_UniformBufferAllocation);
     }
 
     void VulkanUniformBuffer::setData(const void* data, uint32_t bytes, uint32_t offset)

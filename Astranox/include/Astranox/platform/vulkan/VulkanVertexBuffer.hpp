@@ -3,6 +3,8 @@
 #include "Astranox/rendering/VertexBuffer.hpp"
 #include "VulkanDevice.hpp"
 
+#include "vk_mem_alloc.h"
+
 namespace Astranox
 {
     class VulkanVertexBuffer: public VertexBuffer
@@ -20,6 +22,6 @@ namespace Astranox
         Ref<VulkanDevice> m_Device = nullptr;
 
         VkBuffer m_VertexBuffer = VK_NULL_HANDLE;
-        VkDeviceMemory m_VertexBufferMemory = VK_NULL_HANDLE;
+        VmaAllocation m_VertexBufferAllocation = VK_NULL_HANDLE;
     };
 }

@@ -17,41 +17,54 @@ namespace Astranox
         m_TextureMipLevels = enableMipmaps ? calculateMipLevels() : 1;
 
         VkDevice device = VulkanContext::get()->getDevice()->getRaw();
+        VulkanMemoryAllocator allocator("VulkanTexture");
         {
             // Texture image >>>
+            VkBufferCreateInfo stagingBufferCI{
+                .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+                .size = m_Buffer.size,
+                .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+            };
+
             VkBuffer stagingBuffer;
-            VkDeviceMemory stagingBufferMemory;
-            VulkanMemoryAllocator::createBuffer(
-                m_Buffer.size,
-                VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                stagingBuffer,
-                stagingBufferMemory
+            VmaAllocation stagingBufferAllocation = allocator.createBuffer(
+                stagingBufferCI,
+                VMA_MEMORY_USAGE_CPU_TO_GPU,
+                stagingBuffer
             );
 
-            void* data;
-            VK_CHECK(::vkMapMemory(device, stagingBufferMemory, 0, m_Buffer.size, 0, &data));
-            std::memcpy(data, m_Buffer.data, static_cast<size_t>(m_Buffer.size));
-            ::vkUnmapMemory(device, stagingBufferMemory);
+            void* dest = allocator.mapMemory<void>(stagingBufferAllocation);
+            std::memcpy(dest, m_Buffer.data, static_cast<size_t>(m_Buffer.size));
+            allocator.unmapMemory(stagingBufferAllocation);
 
-            VkImageUsageFlags textureUsageFlags = VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
-                                                  VK_IMAGE_USAGE_TRANSFER_DST_BIT |
-                                                  VK_IMAGE_USAGE_SAMPLED_BIT;
-
-            VulkanMemoryAllocator::createImage(
-                m_Width,
-                m_Height,
-                m_TextureMipLevels,
-                VK_SAMPLE_COUNT_1_BIT,
-                VK_FORMAT_R8G8B8A8_SRGB,
-                VK_IMAGE_TILING_OPTIMAL,
-                textureUsageFlags,
-                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                m_TextureImage,
-                m_TextureImageMemory
+            VkImageCreateInfo imageInfo{
+                .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+                .flags = 0,
+                .imageType = VK_IMAGE_TYPE_2D,
+                .format = VK_FORMAT_R8G8B8A8_SRGB,
+                .extent = {
+                    .width = m_Width,
+                    .height = m_Height,
+                    .depth = 1
+                },
+                .mipLevels = m_TextureMipLevels,
+                .arrayLayers = 1,
+                .samples = VK_SAMPLE_COUNT_1_BIT,
+                .tiling = VK_IMAGE_TILING_OPTIMAL,
+                .usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+                      VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+                      VK_IMAGE_USAGE_SAMPLED_BIT,
+                .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+                .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+            };
+            m_TextureImageAllocation = allocator.createImage(
+                imageInfo,
+                VMA_MEMORY_USAGE_GPU_ONLY,
+                m_TextureImage
             );
 
-            VulkanMemoryAllocator::transitionImageLayout(
+            allocator.transitionImageLayout(
                 m_TextureImage,
                 VK_FORMAT_R8G8B8A8_SRGB,
                 VK_IMAGE_LAYOUT_UNDEFINED,
@@ -59,7 +72,7 @@ namespace Astranox
                 m_TextureMipLevels
             );
 
-            VulkanMemoryAllocator::copyBufferToImage(
+            allocator.copyBufferToImage(
                 stagingBuffer,
                 m_TextureImage,
                 m_Width,
@@ -75,7 +88,7 @@ namespace Astranox
 
             generateMipmaps();
 
-            VulkanMemoryAllocator::destroyBuffer(stagingBuffer, stagingBufferMemory);
+            allocator.destroyBuffer(stagingBuffer, stagingBufferAllocation);
             // <<< Texture image
 
             // Texture image view >>>
@@ -119,10 +132,10 @@ namespace Astranox
     {
         VkDevice device = VulkanContext::get()->getDevice()->getRaw();
 
+        VulkanMemoryAllocator allocator("VulkanTexture");
         ::vkDestroySampler(device, m_TextureSampler, nullptr);
         ::vkDestroyImageView(device, m_TextureImageView, nullptr);
-        ::vkDestroyImage(device, m_TextureImage, nullptr);
-        ::vkFreeMemory(device, m_TextureImageMemory, nullptr);
+        allocator.destroyImage(m_TextureImage, m_TextureImageAllocation);
     }
 
     void VulkanTexture::loadFromFile(const std::filesystem::path& path)

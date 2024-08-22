@@ -14,6 +14,7 @@
 #include "Astranox/rendering/Texture.hpp"
 
 #include <vector>
+#include "vk_mem_alloc.h"
 
 namespace Astranox
 {
@@ -107,7 +108,7 @@ namespace Astranox
         struct DepthStencil
         {
             VkImage image = VK_NULL_HANDLE;
-            VkDeviceMemory memory = VK_NULL_HANDLE;
+            VmaAllocation allocation;
             VkImageView imageView = VK_NULL_HANDLE;
         } m_DepthStencil;
     };

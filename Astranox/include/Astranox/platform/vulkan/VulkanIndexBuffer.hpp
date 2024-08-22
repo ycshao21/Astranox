@@ -2,6 +2,7 @@
 
 #include "Astranox/rendering/IndexBuffer.hpp"
 #include "VulkanDevice.hpp"
+#include "vk_mem_alloc.h"
 
 namespace Astranox
 {
@@ -21,6 +22,6 @@ namespace Astranox
         uint32_t m_Count = 0;
 
         VkBuffer m_IndexBuffer = VK_NULL_HANDLE;
-        VkDeviceMemory m_IndexBufferMemory = VK_NULL_HANDLE;
+        VmaAllocation m_IndexBufferAllocation = VK_NULL_HANDLE;
     };
 }

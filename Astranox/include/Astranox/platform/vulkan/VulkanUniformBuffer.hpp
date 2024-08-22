@@ -1,6 +1,7 @@
 #pragma once
 #include "Astranox/rendering/UniformBuffer.hpp"
 #include "Astranox/platform/vulkan/VulkanDevice.hpp"
+#include "vk_mem_alloc.h"
 
 namespace Astranox
 {
@@ -20,7 +21,7 @@ namespace Astranox
         uint32_t m_Bytes = 0;
 
         VkBuffer m_UniformBuffer = VK_NULL_HANDLE;
-        VkDeviceMemory m_UniformBufferMemory = VK_NULL_HANDLE;
+        VmaAllocation m_UniformBufferAllocation;
         void* m_MappedUniformBuffer = nullptr;
 
         VkDescriptorBufferInfo m_DescriptorBufferInfo{};

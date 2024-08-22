@@ -11,46 +11,48 @@ namespace Astranox
     {
         m_Device = VulkanContext::get()->getDevice();
 
-        VkBuffer stagingBuffer;
-        VkDeviceMemory stagingBufferMemory;
+        VulkanMemoryAllocator allocator("VulkanIndexBuffer");
 
-        VulkanMemoryAllocator::createBuffer(
-            bytes,
-            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-            stagingBuffer,
-            stagingBufferMemory
+        VkBufferCreateInfo stagingBufferCI{
+            .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+            .size = bytes,
+            .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+            .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+        };
+
+        VkBuffer stagingBuffer;
+        VmaAllocation stagingBufferAllocation = allocator.createBuffer(
+            stagingBufferCI,
+            VMA_MEMORY_USAGE_CPU_TO_GPU,
+            stagingBuffer
         );
 
         // Upload data to staging buffer
-        void* dest = nullptr;
-        VK_CHECK(::vkMapMemory(m_Device->getRaw(), stagingBufferMemory, 0, bytes, 0, &dest));
+        void* dest = allocator.mapMemory<void>(stagingBufferAllocation);
         std::memcpy(dest, data, bytes);
-        ::vkUnmapMemory(m_Device->getRaw(), stagingBufferMemory);
+        allocator.unmapMemory(stagingBufferAllocation);
 
-        VulkanMemoryAllocator::createBuffer(
-            bytes,
-            VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-            m_IndexBuffer,
-            m_IndexBufferMemory
+        VkBufferCreateInfo indexBufferCI{
+            .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+            .size = bytes,
+            .usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+            .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+        };
+
+        m_IndexBufferAllocation = allocator.createBuffer(
+            indexBufferCI,
+            VMA_MEMORY_USAGE_GPU_ONLY,
+            m_IndexBuffer
         );
-        VulkanMemoryAllocator::copyBuffer(
-            stagingBuffer,
-            m_IndexBuffer,
-            bytes
-        );
-        VulkanMemoryAllocator::destroyBuffer(
-            stagingBuffer,
-            stagingBufferMemory
-        );
+        
+        allocator.copyBuffer(stagingBuffer, m_IndexBuffer, bytes);
+
+        allocator.destroyBuffer(stagingBuffer, stagingBufferAllocation);
     }
 
     VulkanIndexBuffer::~VulkanIndexBuffer()
     {
-        VulkanMemoryAllocator::destroyBuffer(
-            m_IndexBuffer,
-            m_IndexBufferMemory
-        );
+        VulkanMemoryAllocator allocator("VulkanIndexBuffer");
+        allocator.destroyBuffer(m_IndexBuffer, m_IndexBufferAllocation);
     }
 }

@@ -38,6 +38,8 @@ namespace Astranox
     {
         auto physicalDevice = m_Device->getPhysicalDevice();
 
+        VulkanMemoryAllocator allocator("VulkanSwapchain");
+
         // Choose extent >>>
         VkSurfaceCapabilitiesKHR surfaceCapabilities{};
         VK_CHECK(::vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice->getRaw(), m_Surface, &surfaceCapabilities));
@@ -160,22 +162,25 @@ namespace Astranox
         if (m_DepthStencil.image)
         {
             ::vkDestroyImageView(m_Device->getRaw(), m_DepthStencil.imageView, nullptr);
-            ::vkDestroyImage(m_Device->getRaw(), m_DepthStencil.image, nullptr);
-            ::vkFreeMemory(m_Device->getRaw(), m_DepthStencil.memory, nullptr);
+            allocator.destroyImage(m_DepthStencil.image, m_DepthStencil.allocation);
         }
         uint32_t depthMipLevels = 1;
-        VulkanMemoryAllocator::createImage(
-            m_SwapchainExtent.width,
-            m_SwapchainExtent.height,
-            depthMipLevels,
-            msaaSamples,
-            physicalDevice->getDepthFormat(),
-            VK_IMAGE_TILING_OPTIMAL,
-            VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-            m_DepthStencil.image,
-            m_DepthStencil.memory
-        );
+
+        VkImageCreateInfo depthImageCI{
+            .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+            .imageType = VK_IMAGE_TYPE_2D,
+            .format = physicalDevice->getDepthFormat(),
+            .extent = { m_SwapchainExtent.width, m_SwapchainExtent.height, 1 },
+            .mipLevels = depthMipLevels,
+            .arrayLayers = 1,
+            .samples = msaaSamples,
+            .tiling = VK_IMAGE_TILING_OPTIMAL,
+            .usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+            .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+            .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED
+        };
+
+        m_DepthStencil.allocation = allocator.createImage(depthImageCI, VMA_MEMORY_USAGE_GPU_ONLY, m_DepthStencil.image);
 
         m_DepthStencil.imageView = createImageView(
             m_DepthStencil.image,
@@ -209,10 +214,10 @@ namespace Astranox
         m_Device->waitIdle();
 
         VkDevice device = m_Device->getRaw();
+        VulkanMemoryAllocator allocator("VulkanSwapchain");
 
         ::vkDestroyImageView(device, m_DepthStencil.imageView, nullptr);
-        ::vkDestroyImage(device, m_DepthStencil.image, nullptr);
-        ::vkFreeMemory(device, m_DepthStencil.memory, nullptr);
+        allocator.destroyImage(m_DepthStencil.image, m_DepthStencil.allocation);
 
         //::vkDestroyImageView(device, m_ColorAttachment.imageView, nullptr);
         //::vkDestroyImage(device, m_ColorAttachment.image, nullptr);
