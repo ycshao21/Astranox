@@ -7,6 +7,7 @@
 #include "Astranox/core/EntryPoint.hpp"
 
 #include "Astranox/rendering/Renderer.hpp"
+#include "Astranox/rendering/Renderer2D.hpp"
 #include "Astranox/rendering/Mesh.hpp"
 #include "Astranox/rendering/VertexBufferLayout.hpp"
 

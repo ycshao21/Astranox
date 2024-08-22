@@ -104,6 +104,6 @@ namespace Astranox
 
     private:
         std::vector<VertexBufferElement> m_Elements;
-        uint32_t m_Stride;
+        uint32_t m_Stride = 0;
     };
 }

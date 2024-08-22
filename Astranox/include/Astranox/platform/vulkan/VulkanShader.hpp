@@ -6,6 +6,12 @@
 
 namespace Astranox
 {
+    struct UniformBufferInfo
+    {
+        VkShaderStageFlags shaderStage; 
+        std::string debugName;
+    };
+
     class VulkanShader : public Shader
     {
         friend class VulkanPipeline;
@@ -14,34 +20,39 @@ namespace Astranox
         VulkanShader(const std::string& name, const std::filesystem::path& vertexPath, const std::filesystem::path& fragmentPath);
         virtual ~VulkanShader();
 
-        virtual void createShaders(const std::vector<char>& vertexCode, const std::vector<char>& fragmentCode) override;
-        void createDescriptorSetLayout();
+        void setUniformBufferInfos(const std::map<uint32_t, UniformBufferInfo>& uniformBufferInfos)
+        {
+            m_UniformBufferInfos = uniformBufferInfos;
+        }
+
+        void createDescriptorSetLayouts();
         void destroy();
 
+    public:
+        void bind() override;
+        void unbind() override;
 
-        virtual void bind() override;
-        virtual void unbind() override;
+    public:
+        const std::string& getName() const override { return m_Name; }
 
-        virtual const std::string& getName() const override { return m_Name; }
+        VkDescriptorSetLayout getDescriptorSetLayout(uint32_t setIndex) { return m_DescriptorSetLayouts[setIndex]; }
+        const std::vector<VkDescriptorSetLayout>& getDescriptorSetLayouts() { return m_DescriptorSetLayouts; }
 
-        VkShaderModule getVertexShader() const { return m_VertexShaderModule; }
-        VkShaderModule getFragmentShader() const { return m_FragmentShaderModule; }
-
-        std::vector<VkDescriptorSetLayout>& getDescriptorSetLayouts() { return m_DescriptorSetLayouts; }
-        std::vector<VkPushConstantRange>& getPushConstantRanges() { return m_PushConstantRanges; }
+        const std::vector<VkPushConstantRange>& getPushConstantRanges() { return m_PushConstantRanges; }
 
         std::vector<VkPipelineShaderStageCreateInfo>& getShaderStageCreateInfos() { return m_ShaderStages; }
 
     private:
         std::vector<char> readCompiledShaderFile(const std::filesystem::path& codeFile);
+        void createShaders(const std::map<VkShaderStageFlagBits, std::vector<char>>& shaderData);
 
     private:
         std::string m_Name;
 
-        VkShaderModule m_VertexShaderModule = VK_NULL_HANDLE;
-        VkShaderModule m_FragmentShaderModule = VK_NULL_HANDLE;
+        std::map<uint32_t, UniformBufferInfo> m_UniformBufferInfos;
 
-        std::vector<VkDescriptorSetLayout> m_DescriptorSetLayouts;  // Unset
+        std::vector<VkDescriptorSetLayout> m_DescriptorSetLayouts;
+
         std::vector<VkPushConstantRange> m_PushConstantRanges;  // Unset
 
         std::vector<VkPipelineShaderStageCreateInfo> m_ShaderStages;

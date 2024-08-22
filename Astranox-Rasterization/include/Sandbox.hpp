@@ -14,7 +14,7 @@ public:
         std::filesystem::path vertexShaderPath = "../Astranox-Rasterization/assets/shaders/PureColor-Vert.spv";
         std::filesystem::path fragmentShaderPath = "../Astranox-Rasterization/assets/shaders/PureColor-Frag.spv";
         auto shader = m_ShaderLibrary.load("PureColor", vertexShaderPath, fragmentShaderPath);
-        shader.as<Astranox::VulkanShader>()->createDescriptorSetLayout();
+        shader.as<Astranox::VulkanShader>()->createDescriptorSetLayouts();
 
         Astranox::VertexBufferLayout vertexBufferLayout{
             {Astranox::ShaderDataType::Vec3, "a_Position"},
@@ -101,11 +101,11 @@ public:
         m_TetrahedronMesh = Astranox::Mesh(tetrahedronVertices, tetrahedronIndices);
 
 
-        m_CameraUBA = Astranox::UniformBufferArray::create(sizeof(CameraData));
+        m_CameraUBA = Astranox::UniformBufferArray::create(sizeof(Astranox::CameraData));
 
         m_DescriptorManager = Astranox::Ref<Astranox::VulkanDescriptorManager>::create();
         m_DescriptorManager->init(
-            shader.as<Astranox::VulkanShader>()->getDescriptorSetLayouts()[0],
+            shader.as<Astranox::VulkanShader>()->getDescriptorSetLayout()[0],
             m_Texture.as<Astranox::VulkanTexture>()->getSampler(),
             m_Texture.as<Astranox::VulkanTexture>()->getImageView(),
             m_CameraUBA
@@ -142,9 +142,9 @@ public:
             m_DescriptorManager->getDescriptorSets()
         );
 
-        CameraData cameraData;
+        Astranox::CameraData cameraData;
         cameraData.viewProjection = m_Camera->getProjectionMatrix() * m_Camera->getViewMatrix();
-        m_CameraUBA->getCurrentBuffer()->setData(&cameraData, sizeof(CameraData), 0);
+        m_CameraUBA->getCurrentBuffer()->setData(&cameraData, sizeof(Astranox::CameraData), 0);
 
         Astranox::Renderer::renderMesh(swapchain->getCurrentCommandBuffer(), m_Pipeline, m_CubeMesh, 1);
         Astranox::Renderer::renderMesh(swapchain->getCurrentCommandBuffer(), m_Pipeline, m_TetrahedronMesh, 1);

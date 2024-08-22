@@ -5,6 +5,12 @@
 
 namespace Astranox
 {
+    // TEMP
+    struct CameraData
+    {
+        alignas(16) glm::mat4 viewProjection;
+    };
+
     struct RendererConfig
     {
         uint32_t framesInFlight;
@@ -32,6 +38,13 @@ namespace Astranox
             const std::vector<VkDescriptorSet>& descriptorSets);
 
         static void endRenderPass(VkCommandBuffer commandBuffer);
+
+        static void renderGeometry(
+            VkCommandBuffer commandBuffer,
+            Ref<VulkanPipeline> pipeline,
+            Ref<VertexBuffer> vertexBuffer,
+            Ref<IndexBuffer> indexBuffer,
+            uint32_t indexCount);
 
         static void renderMesh(
             VkCommandBuffer commandBuffer,

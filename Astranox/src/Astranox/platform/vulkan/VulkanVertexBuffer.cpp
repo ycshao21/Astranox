@@ -6,6 +6,19 @@
 
 namespace Astranox
 {
+    VulkanVertexBuffer::VulkanVertexBuffer(uint32_t bytes)
+    {
+        m_Device = VulkanContext::get()->getDevice();
+
+        VulkanBufferManager::createBuffer(
+            bytes,
+            VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            m_VertexBuffer,
+            m_VertexBufferMemory
+        );
+    }
+
     VulkanVertexBuffer::VulkanVertexBuffer(void* data, uint32_t bytes)
     {
         m_Device = VulkanContext::get()->getDevice();
@@ -53,9 +66,11 @@ namespace Astranox
         );
     }
 
-    void VulkanVertexBuffer::bind()
+    void VulkanVertexBuffer::setData(const void* data, uint32_t bytes)
     {
-        /*VkDeviceSize offsets[] = { 0 };
-        vkCmdBindVertexBuffers(getCurrentCommandBuffer(), 0, 1, &m_VertexBuffer, offsets);*/
+        void* dest = nullptr;
+        VK_CHECK(::vkMapMemory(m_Device->getRaw(), m_VertexBufferMemory, 0, bytes, 0, &dest));
+        std::memcpy(dest, data, bytes);
+        ::vkUnmapMemory(m_Device->getRaw(), m_VertexBufferMemory);
     }
 }

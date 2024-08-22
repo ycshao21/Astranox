@@ -8,10 +8,11 @@ namespace Astranox
     class VulkanVertexBuffer: public VertexBuffer
     {
     public:
+        VulkanVertexBuffer(uint32_t bytes);
         VulkanVertexBuffer(void* data, uint32_t bytes);
         virtual ~VulkanVertexBuffer();
 
-        virtual void bind() override;
+        void setData(const void* data, uint32_t bytes) override;
 
         VkBuffer getRaw() { return m_VertexBuffer; }
 

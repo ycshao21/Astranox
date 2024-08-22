@@ -12,25 +12,17 @@ namespace Astranox
 {
     VulkanDescriptorManager::VulkanDescriptorManager()
     {
-        uint32_t framesInFlight = Renderer::getConfig().framesInFlight;
-
         // Descriptor pool >>>
         std::vector<VkDescriptorPoolSize> poolSizes{
-            // Uniform buffer
-            {
-                .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                .descriptorCount = framesInFlight
-            },
-            // Sampler
-            {
-                .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                .descriptorCount = framesInFlight
-            }
+            { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000 },            // Uniform buffer
+            { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000 },    // Uniform buffer dynamic
         };
 
+        //uint32_t framesInFlight = Renderer::getConfig().framesInFlight;
         VkDescriptorPoolCreateInfo poolInfo{
             .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-            .maxSets = framesInFlight,
+            .flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
+            .maxSets = 1000,
             .poolSizeCount = static_cast<uint32_t>(poolSizes.size()),
             .pPoolSizes = poolSizes.data()
         };
@@ -46,67 +38,54 @@ namespace Astranox
         ::vkDestroyDescriptorPool(device, m_DescriptorPool, nullptr);
     }
 
-    void VulkanDescriptorManager::init(VkDescriptorSetLayout layout, VkSampler sampler, VkImageView imageView, Ref<UniformBufferArray> uba)
+    void VulkanDescriptorManager::createDescriptorSets(Ref<Shader> shader, Ref<UniformBufferArray> uba)
     {
         auto device = VulkanContext::get()->getDevice();
         uint32_t framesInFlight = Renderer::getConfig().framesInFlight;
 
-        // Descriptor sets >>>
-        std::vector<VkDescriptorSetLayout> layouts(framesInFlight, layout);
-        VkDescriptorSetAllocateInfo allocInfo{
-            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-            .descriptorPool = m_DescriptorPool,
-            .descriptorSetCount = static_cast<uint32_t>(framesInFlight),
-            .pSetLayouts = layouts.data()
-        };
+        auto layout = shader.as<VulkanShader>()->getDescriptorSetLayout(0);
 
+        m_DescriptorSets.clear();
         m_DescriptorSets.resize(framesInFlight);
-        VK_CHECK(::vkAllocateDescriptorSets(device->getRaw(), &allocInfo, m_DescriptorSets.data()));
 
-
-        for (uint32_t i = 0; i < framesInFlight; i++) {
-            // Sampler
-            VkDescriptorImageInfo imageInfo{
-                .sampler = sampler,
-                .imageView = imageView,
-                .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+        for (uint32_t frameIndex = 0; frameIndex < framesInFlight; ++frameIndex)
+        {
+            // Descriptor set >>>
+            VkDescriptorSetAllocateInfo allocInfo{
+                .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+                .descriptorPool = m_DescriptorPool,
+                .descriptorSetCount = 1,
+                .pSetLayouts = &layout
             };
 
-            std::vector<VkWriteDescriptorSet> descriptorWrites{
+            VkDescriptorSet& descriptorSet = m_DescriptorSets[frameIndex].emplace_back();
+            VK_CHECK(::vkAllocateDescriptorSets(device->getRaw(), &allocInfo, &descriptorSet));
+            // <<< Descriptor set
+
+            // Descriptor writes >>>
+            auto& bufferInfo = uba->getBuffer(frameIndex).as<VulkanUniformBuffer>()->getDescriptorBufferInfo();
+
+            std::vector<VkWriteDescriptorSet> writeDescriptors{
                 // Uniform buffer
                 {
                     .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                    .dstSet = m_DescriptorSets[i],
+                    .dstSet = descriptorSet,
                     .dstBinding = 0,
                     .dstArrayElement = 0,
                     .descriptorCount = 1,
                     .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
                     .pImageInfo = nullptr,
-                    .pBufferInfo = &uba->getBuffer(i).as<VulkanUniformBuffer>()->getDescriptorBufferInfo(),
-                    .pTexelBufferView = nullptr
-                },
-                // Sampler
-                {
-                    .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                    .dstSet = m_DescriptorSets[i],
-                    .dstBinding = 1,
-                    .dstArrayElement = 0,
-                    .descriptorCount = 1,
-                    .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                    .pImageInfo = &imageInfo,
-                    .pBufferInfo = nullptr,
+                    .pBufferInfo = &bufferInfo,
                     .pTexelBufferView = nullptr
                 }
             };
 
             ::vkUpdateDescriptorSets(
                 device->getRaw(),
-                static_cast<uint32_t>(descriptorWrites.size()),
-                descriptorWrites.data(),
+                static_cast<uint32_t>(writeDescriptors.size()),
+                writeDescriptors.data(),
                 0,
-                nullptr
-            );
+                nullptr);
         }
-        // <<< Descriptor sets
     }
 }

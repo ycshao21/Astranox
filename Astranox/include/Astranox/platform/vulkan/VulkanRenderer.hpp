@@ -29,5 +29,12 @@ namespace Astranox
 			Ref<VulkanPipeline> pipeline,
 			Mesh& mesh,
 			uint32_t instanceCount) override;
+
+        void renderGeometry(
+            VkCommandBuffer commandBuffer,
+            Ref<VulkanPipeline> pipeline,
+            Ref<VertexBuffer> vertexBuffer,
+            Ref<IndexBuffer> indexBuffer,
+            uint32_t indexCount = 1) override;
 	};
 }

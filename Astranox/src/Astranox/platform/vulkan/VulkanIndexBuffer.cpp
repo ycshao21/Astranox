@@ -53,9 +53,4 @@ namespace Astranox
             m_IndexBufferMemory
         );
     }
-
-    void VulkanIndexBuffer::bind()
-    {
-        //vkCmdBindIndexBuffer(getCurrentCommandBuffer(), m_IndexBuffer, 0, VK_INDEX_TYPE_UINT32);
-    }
 }

@@ -10,11 +10,10 @@
 
 namespace Astranox
 {
-    VulkanPipeline::VulkanPipeline(Ref<Shader> shader, const VertexBufferLayout& vertexBufferLayout)
+    VulkanPipeline::VulkanPipeline(const PipelineSpecification& specification)
+        : m_Specification(specification)
     {
-        m_Shader = shader.as<VulkanShader>();
-
-        m_VertexBufferLayout = vertexBufferLayout;
+        init();
     }
 
     VulkanPipeline::~VulkanPipeline()
@@ -26,12 +25,13 @@ namespace Astranox
         ::vkDestroyPipelineCache(device->getRaw(), m_PipelineCache, nullptr);
     }
 
-    void VulkanPipeline::createPipeline()
+    void VulkanPipeline::init()
     {
         auto device = VulkanContext::get()->getDevice();
 
-        auto& descriptorSetLayouts = m_Shader->getDescriptorSetLayouts();
-        auto& pushConstantRanges = m_Shader->getPushConstantRanges();
+        Ref<VulkanShader> shader = m_Specification.shader.as<VulkanShader>();
+        const auto& descriptorSetLayouts = shader->getDescriptorSetLayouts();
+        const auto& pushConstantRanges = shader->getPushConstantRanges();
 
         // Pipeline Layout >>>
         VkPipelineLayoutCreateInfo pipelineLayoutInfo = {
@@ -47,16 +47,17 @@ namespace Astranox
 
         // Pipeline >>>
         // (1) Vertex Input
-        std::vector<VkVertexInputBindingDescription> vertexInputBindings {
+        auto& vbLayout = m_Specification.vertexBufferLayout;
+        std::vector<VkVertexInputBindingDescription> vertexInputBindings{
             {
                 .binding = 0,
-                .stride = sizeof(Vertex),
+                .stride = vbLayout.getStride(),
                 .inputRate = VK_VERTEX_INPUT_RATE_VERTEX,
             }
         };
 
         std::vector<VkVertexInputAttributeDescription> vertexInputAttributes;
-        auto& elements = m_VertexBufferLayout.getElements();
+        auto& elements = vbLayout.getElements();
         for (uint32_t i = 0; i < static_cast<uint32_t>(elements.size()); i++)
         {
             const auto& e = elements[i];
@@ -126,13 +127,11 @@ namespace Astranox
         };
 
         // (7) Depth and Stencil
-        VkBool32 depthTestEnable = VK_TRUE;
-        VkBool32 depthWriteEnable = VK_TRUE;
         VkCompareOp depthCompareOp = VK_COMPARE_OP_LESS;
         VkPipelineDepthStencilStateCreateInfo depthStencilInfo = {
             .sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
-            .depthTestEnable = depthTestEnable,
-            .depthWriteEnable = depthWriteEnable,
+            .depthTestEnable = m_Specification.depthTestEnable ? VK_TRUE : VK_FALSE,
+            .depthWriteEnable = m_Specification.depthWriteEnable ? VK_TRUE : VK_FALSE,
             .depthCompareOp = depthCompareOp,
             .depthBoundsTestEnable = VK_FALSE,
             .stencilTestEnable = VK_FALSE,
@@ -144,9 +143,9 @@ namespace Astranox
 
         // (8) Color Blending
         VkPipelineColorBlendAttachmentState colorBlendAttachment = {
-            .blendEnable = VK_FALSE,
-            .srcColorBlendFactor = VK_BLEND_FACTOR_ONE,
-            .dstColorBlendFactor = VK_BLEND_FACTOR_ZERO,
+            .blendEnable = VK_TRUE,
+            .srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA,
+            .dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
             .colorBlendOp = VK_BLEND_OP_ADD,
             .srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE,
             .dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
@@ -175,7 +174,7 @@ namespace Astranox
             .pDynamicStates = dynamicStates.data(),
         };
 
-        auto& shaderStages = m_Shader->getShaderStageCreateInfos();
+        auto& shaderStages = shader->getShaderStageCreateInfos();
 
         VkGraphicsPipelineCreateInfo pipelineInfo = {
             .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,

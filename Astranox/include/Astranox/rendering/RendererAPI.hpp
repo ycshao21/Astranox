@@ -30,6 +30,13 @@ namespace Astranox
 			Mesh& mesh,
 			uint32_t instanceCount) = 0;
 
+        virtual void renderGeometry(
+            VkCommandBuffer commandBuffer,
+            Ref<VulkanPipeline> pipeline,
+            Ref<VertexBuffer> vertexBuffer,
+            Ref<IndexBuffer> indexBuffer,
+            uint32_t instanceCount = 1) = 0;
+
     public:
         static Type getType() { return s_Type; }
 

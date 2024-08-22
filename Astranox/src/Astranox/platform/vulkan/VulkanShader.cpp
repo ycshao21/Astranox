@@ -35,7 +35,11 @@ namespace Astranox
         auto vertexCode = readCompiledShaderFile(vertexPath);
         auto fragmentCode = readCompiledShaderFile(fragmentPath);
 
-        createShaders(vertexCode, fragmentCode);
+        std::map<VkShaderStageFlagBits, std::vector<char>> shaderData{
+            { VK_SHADER_STAGE_VERTEX_BIT, vertexCode },
+            { VK_SHADER_STAGE_FRAGMENT_BIT, fragmentCode }
+        };
+        createShaders(shaderData);
     }
 
     VulkanShader::~VulkanShader()
@@ -52,79 +56,74 @@ namespace Astranox
             ::vkDestroyDescriptorSetLayout(device->getRaw(), layout, nullptr);
         }
 
-        ::vkDestroyShaderModule(device->getRaw(), m_VertexShaderModule, nullptr);
-        ::vkDestroyShaderModule(device->getRaw(), m_FragmentShaderModule, nullptr);
+        for (auto stage : m_ShaderStages)
+        {
+            ::vkDestroyShaderModule(device->getRaw(), stage.module, nullptr);
+        }
     }
 
-    void VulkanShader::createShaders(const std::vector<char>& vertexCode, const std::vector<char>& fragmentCode)
+    void VulkanShader::createShaders(const std::map<VkShaderStageFlagBits, std::vector<char>>& shaderData)
     {
         auto device = VulkanContext::get()->getDevice();
 
-        VkShaderModuleCreateInfo createInfo{
-            .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
-        };
+        m_ShaderStages.clear();
 
-        createInfo.codeSize = vertexCode.size();
-        createInfo.pCode = reinterpret_cast<const uint32_t*>(vertexCode.data());
-        VK_CHECK(::vkCreateShaderModule(device->getRaw(), &createInfo, nullptr, &m_VertexShaderModule));
+        for (auto& [stage, code] : shaderData)
+        {
+            VkShaderModuleCreateInfo createInfo{
+                .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+                .codeSize = code.size(),
+                .pCode = reinterpret_cast<const uint32_t*>(code.data()),
+            };
 
-        VkPipelineShaderStageCreateInfo vertexShaderStage{
-            .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-            .stage = VK_SHADER_STAGE_VERTEX_BIT,
-            .module = m_VertexShaderModule,
-            .pName = "main",
-            .pSpecializationInfo = nullptr,
-        };
-        m_ShaderStages.push_back(vertexShaderStage);
+            VkShaderModule shaderModule;
+            VK_CHECK(::vkCreateShaderModule(device->getRaw(), &createInfo, nullptr, &shaderModule));
 
-        createInfo.codeSize = fragmentCode.size();
-        createInfo.pCode = reinterpret_cast<const uint32_t*>(fragmentCode.data());
-        VK_CHECK(::vkCreateShaderModule(device->getRaw(), &createInfo, nullptr, &m_FragmentShaderModule));
-
-        VkPipelineShaderStageCreateInfo fragmentShaderStage{
-            .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-            .stage = VK_SHADER_STAGE_FRAGMENT_BIT,
-            .module = m_FragmentShaderModule,
-            .pName = "main",
-            .pSpecializationInfo = nullptr,
-        };
-        m_ShaderStages.push_back(fragmentShaderStage);
+            VkPipelineShaderStageCreateInfo shaderStage{
+                .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+                .stage = stage,
+                .module = shaderModule,
+                .pName = "main",
+                .pSpecializationInfo = nullptr,
+            };
+            m_ShaderStages.push_back(shaderStage);
+        }
     }
 
-    void VulkanShader::createDescriptorSetLayout()
+    void VulkanShader::createDescriptorSetLayouts()
     {
-        std::vector<VkDescriptorSetLayoutBinding> bindings{
-            // Uniform Buffer
+        uint32_t setCount = 1;
+        m_DescriptorSetLayouts.clear();
+        m_DescriptorSetLayouts.resize(setCount);
+
+        for (uint32_t setIndex = 0; setIndex < setCount; ++setIndex)
+        {
+            std::vector<VkDescriptorSetLayoutBinding> layoutBindings;
+            for (auto& [binding, info] : m_UniformBufferInfos)
             {
-                .binding = 0,
-                .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                .descriptorCount = 1,
-                .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
-                .pImmutableSamplers = nullptr,
-            },
-            // Sampler
-            {
-                .binding = 1,
-                .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                .descriptorCount = 1,
-                .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-                .pImmutableSamplers = nullptr,
+                VkDescriptorType descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+
+                VkDescriptorSetLayoutBinding& bindingInfo = layoutBindings.emplace_back();
+                bindingInfo = {
+                    .binding = binding,
+                    .descriptorType = descriptorType,
+                    .descriptorCount = 1,
+                    .stageFlags = info.shaderStage,
+                    .pImmutableSamplers = nullptr,
+                };
             }
-        };
 
-        VkDescriptorSetLayoutCreateInfo layoutInfo{
-            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-            .bindingCount = static_cast<uint32_t>(bindings.size()),
-            .pBindings = bindings.data(),
-        };
+            VkDescriptorSetLayoutCreateInfo layoutInfo{
+                .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+                .bindingCount = static_cast<uint32_t>(layoutBindings.size()),
+                .pBindings = layoutBindings.data(),
+            };
 
-        VkDescriptorSetLayout layout;
-        VK_CHECK(::vkCreateDescriptorSetLayout(
+            VK_CHECK(::vkCreateDescriptorSetLayout(
                 VulkanContext::get()->getDevice()->getRaw(),
                 &layoutInfo,
                 nullptr,
-                &layout)
-        );
-        m_DescriptorSetLayouts.push_back(layout);
+                &m_DescriptorSetLayouts[setIndex]));
+        }
     }
 }

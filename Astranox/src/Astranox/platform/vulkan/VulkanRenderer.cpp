@@ -72,8 +72,7 @@ namespace Astranox
         };
         vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-        uint32_t currentFrameIndex = Renderer::getCurrentFrameIndex();
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->getLayout(), 0, 1, &descriptorSets[currentFrameIndex], 0, nullptr);
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->getLayout(), 0, descriptorSets.size(), descriptorSets.data(), 0, nullptr);
 
         // Bind pipeline
         VkPipeline graphicsPipeline = pipeline->getRaw();
@@ -100,6 +99,18 @@ namespace Astranox
         vkCmdBindIndexBuffer(commandBuffer, ib, 0, VK_INDEX_TYPE_UINT32);
 
         vkCmdDrawIndexed(commandBuffer, mesh.getIndexBuffer()->getCount(), instanceCount, 0, 0, 0);
+    }
+
+    void VulkanRenderer::renderGeometry(VkCommandBuffer commandBuffer, Ref<VulkanPipeline> pipeline, Ref<VertexBuffer> vertexBuffer, Ref<IndexBuffer> indexBuffer, uint32_t indexCount)
+    {
+        VkDeviceSize offsets[] = { 0 };
+        VkBuffer vb = vertexBuffer.as<VulkanVertexBuffer>()->getRaw();
+        vkCmdBindVertexBuffers(commandBuffer, 0, 1, &vb, offsets);
+
+        VkBuffer ib = indexBuffer.as<VulkanIndexBuffer>()->getRaw();
+        vkCmdBindIndexBuffer(commandBuffer, ib, 0, VK_INDEX_TYPE_UINT32);
+
+        vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, 0);
     }
 }
 

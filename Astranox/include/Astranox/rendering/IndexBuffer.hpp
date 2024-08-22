@@ -11,8 +11,6 @@ namespace Astranox
         virtual ~IndexBuffer() = default;
 
     public:
-        virtual void bind() = 0;
-
         virtual uint32_t getCount() const = 0;
     };
 }

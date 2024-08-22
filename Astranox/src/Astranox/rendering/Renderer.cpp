@@ -68,6 +68,11 @@ namespace Astranox
         s_RendererAPI->endRenderPass(commandBuffer);
     }
 
+    void Renderer::renderGeometry(VkCommandBuffer commandBuffer, Ref<VulkanPipeline> pipeline, Ref<VertexBuffer> vertexBuffer, Ref<IndexBuffer> indexBuffer, uint32_t indexCount)
+    {
+        s_RendererAPI->renderGeometry(commandBuffer, pipeline, vertexBuffer, indexBuffer, indexCount);
+    }
+
     void Renderer::renderMesh(VkCommandBuffer commandBuffer, Ref<VulkanPipeline> pipeline, Mesh& mesh, uint32_t instanceCount)
     {
         s_RendererAPI->renderMesh(commandBuffer, pipeline, mesh, instanceCount);

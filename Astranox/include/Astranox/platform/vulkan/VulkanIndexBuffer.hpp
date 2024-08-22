@@ -11,8 +11,6 @@ namespace Astranox
         VulkanIndexBuffer(uint32_t* data, uint32_t bytes);
         virtual ~VulkanIndexBuffer();
 
-        virtual void bind() override;
-
         VkBuffer getRaw() { return m_IndexBuffer; }
 
         virtual uint32_t getCount() const override { return m_Count; }
