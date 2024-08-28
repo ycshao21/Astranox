@@ -5,12 +5,12 @@
 
 namespace Astranox
 {
-    Ref<Shader> Shader::create(const std::filesystem::path& filepath)
+    Ref<Shader> Shader::create()
     {
         switch (RendererAPI::getType())
         {
             case RendererAPI::Type::None:  { AST_CORE_ASSERT(false, "RendererAPI::None is not supported!"); break; }
-            case RendererAPI::Type::Vulkan: { return Ref<VulkanShader>::create(filepath); }
+            case RendererAPI::Type::Vulkan: { return Ref<VulkanShader>::create(); }
         }
 
         AST_CORE_ASSERT(false, "Unknown Renderer API!");
@@ -33,7 +33,7 @@ namespace Astranox
 
     Ref<Shader> ShaderLibrary::load(const std::filesystem::path& filepath)
     {
-        auto shader = Shader::create(filepath);
+        auto shader = VulkanShaderCompiler::compile(filepath);
         add(shader);
         return shader;
     }

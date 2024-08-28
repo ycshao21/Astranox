@@ -8,10 +8,8 @@ namespace Astranox
     class Shader: public RefCounted
     {
     public:
-        static Ref<Shader> create(const std::filesystem::path& filepath);
+        static Ref<Shader> create();
         virtual ~Shader() = default;
-
-        //virtual void createShaders(const std::vector<char>& vertexCode, const std::vector<char>& fragmentCode) = 0;
 
         virtual const std::string& getName() const = 0;
 

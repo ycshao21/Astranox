@@ -3,6 +3,7 @@
 #include "Astranox/core/Application.hpp"
 #include "Astranox/core/Layer.hpp"
 #include "Astranox/core/Logging.hpp"
+#include "Astranox/core/RefCounted.hpp"
 
 #include "Astranox/core/EntryPoint.hpp"
 
@@ -14,7 +15,7 @@
 #include "Astranox/platform/vulkan/VulkanContext.hpp"
 #include "Astranox/platform/vulkan/VulkanTexture2D.hpp"
 #include "Astranox/platform/vulkan/VulkanRenderer.hpp"
-#include "Astranox/platform/vulkan/VulkanShader.hpp"
+#include "Astranox/platform/vulkan/VulkanShaderCompiler.hpp"
 #include "Astranox/platform/vulkan/VulkanUniformBufferArray.hpp"
 
 

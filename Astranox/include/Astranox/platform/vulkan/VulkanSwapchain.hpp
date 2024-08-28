@@ -41,7 +41,7 @@ namespace Astranox
         VkExtent2D getExtent() const { return m_SwapchainExtent; }
 
         VkRenderPass getRenderPass() { return m_RenderPass; }
-        uint32_t getImageCount() const { return m_Images.size(); }
+        uint32_t getImageCount() const { return static_cast<uint32_t>(m_Images.size()); }
 
         VkFramebuffer getCurrentFramebuffer() { return m_Framebuffers[m_CurrentImageIndex]; }
         VkCommandBuffer getCurrentCommandBuffer();

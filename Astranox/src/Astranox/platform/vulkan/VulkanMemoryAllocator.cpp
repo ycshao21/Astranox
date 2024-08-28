@@ -39,7 +39,7 @@ namespace Astranox
 
         VmaAllocation allocation;
         VK_CHECK(::vmaCreateBuffer(s_allocator, &bufferCreateInfo, &allocationCreateInfo, &buffer, &allocation, nullptr));
-        AST_CORE_INFO("VulkanMemoryAllocator \"{0}\": Allocated buffer of {1} bytes", m_debugName, bufferCreateInfo.size);
+        AST_CORE_DEBUG("VulkanMemoryAllocator \"{0}\": Allocated buffer of {1} bytes", m_debugName, bufferCreateInfo.size);
 
         return allocation;
     }
@@ -55,20 +55,20 @@ namespace Astranox
 
         VmaAllocationInfo allocationInfo;
         ::vmaGetAllocationInfo(s_allocator, allocation, &allocationInfo);
-        AST_CORE_INFO("VulkanMemoryAllocator \"{0}\": Allocated image of {1}x{2} pixels, {3} bytes", m_debugName, imageCreateInfo.extent.width, imageCreateInfo.extent.height, allocationInfo.size);
+        AST_CORE_DEBUG("VulkanMemoryAllocator \"{0}\": Allocated image of {1}x{2} pixels, {3} bytes", m_debugName, imageCreateInfo.extent.width, imageCreateInfo.extent.height, allocationInfo.size);
 
         return allocation;
     }
 
     void VulkanMemoryAllocator::destroyBuffer(VkBuffer& buffer, VmaAllocation allocation)
     {
-        AST_CORE_INFO("VulkanMemoryAllocator \"{0}\": Destroyed buffer", m_debugName);
+        AST_CORE_DEBUG("VulkanMemoryAllocator \"{0}\": Destroyed buffer", m_debugName);
         ::vmaDestroyBuffer(s_allocator, buffer, allocation);
     }
 
     void VulkanMemoryAllocator::destroyImage(VkImage& image, VmaAllocation allocation)
     {
-        AST_CORE_INFO("VulkanMemoryAllocator \"{0}\": Destroyed image", m_debugName);
+        AST_CORE_DEBUG("VulkanMemoryAllocator \"{0}\": Destroyed image", m_debugName);
         ::vmaDestroyImage(s_allocator, image, allocation);
     }
 

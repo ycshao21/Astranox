@@ -200,7 +200,7 @@ namespace Astranox
         }
         createFramebuffers();
 
-        uint32_t framesInFlight = m_Images.size();
+        uint32_t framesInFlight = static_cast<uint32_t>(m_Images.size());
         m_CommandBuffers = m_Device->getCommandPool()->allocateCommandBuffers(framesInFlight);
 
         if (m_InFlightFences.empty())
@@ -223,7 +223,7 @@ namespace Astranox
         //::vkDestroyImage(device, m_ColorAttachment.image, nullptr);
         //::vkFreeMemory(device, m_ColorAttachment.memory, nullptr);
 
-        uint32_t framesInFlight = m_Images.size();
+        uint32_t framesInFlight = static_cast<uint32_t>(m_Images.size());
         for (size_t i = 0; i < framesInFlight; i++)
         {
             ::vkDestroySemaphore(device, m_ImageAvailableSemaphores[i], nullptr);
@@ -388,7 +388,7 @@ namespace Astranox
         uint32_t imageCount = 0;
         ::vkGetSwapchainImagesKHR(m_Device->getRaw(), m_Swapchain, &imageCount, nullptr);
         AST_CORE_ASSERT(imageCount != 0, "Failed to get swapchain images");
-        AST_CORE_INFO("Actual number of swapchain images: {0}", imageCount);
+        AST_CORE_TRACE("Actual number of swapchain images: {0}", imageCount);
 
         std::vector<VkImage> images(imageCount);
         ::vkGetSwapchainImagesKHR(m_Device->getRaw(), m_Swapchain, &imageCount, images.data());
@@ -529,7 +529,7 @@ namespace Astranox
 
     void VulkanSwapchain::createSyncObjects()
     {
-        uint32_t framesInFlight = m_Images.size();
+        uint32_t framesInFlight = static_cast<uint32_t>(m_Images.size());
 
         m_ImageAvailableSemaphores.resize(framesInFlight);
         m_RenderFinishedSemaphores.resize(framesInFlight);

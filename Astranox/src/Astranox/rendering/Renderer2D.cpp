@@ -9,6 +9,7 @@
 #include "Astranox/rendering/UniformBufferArray.hpp"
 
 #include "Astranox/platform/vulkan/VulkanShader.hpp"
+#include "Astranox/platform/vulkan/VulkanShaderCompiler.hpp"
 #include "Astranox/platform/vulkan/VulkanPipeline.hpp"
 #include "Astranox/platform/vulkan/VulkanDescriptorManager.hpp"
 #include "Astranox/platform/vulkan/VulkanTexture2D.hpp"
@@ -58,18 +59,7 @@ namespace Astranox
         s_Data = new Renderer2DData;
 
         std::filesystem::path shaderPath = "assets/shaders/Texture.glsl";
-
-        ShaderDescriptorSetInfo sdsi;
-        sdsi.uniformBufferInfos = {
-            { 0, { 1, VK_SHADER_STAGE_VERTEX_BIT, "u_Camera" } },
-        };
-        sdsi.imageSamplerInfos = {
-            { 1, { Renderer2DData::maxTextureSlots, VK_SHADER_STAGE_FRAGMENT_BIT, "u_Textures" }}
-        };
-        s_Data->shader = Shader::create(shaderPath);
-        s_Data->shader.as<VulkanShader>()->setDescriptorSetInfo(sdsi);
-        s_Data->shader.as<VulkanShader>()->createDescriptorSetLayouts();
-
+        s_Data->shader = VulkanShaderCompiler::compile(shaderPath);
 
         // Vertex buffer >>>
         VertexBufferLayout vertexBufferLayout{
