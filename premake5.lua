@@ -2,13 +2,13 @@ include "dependencies.lua"
 
 workspace "Astranox"
     architecture "x64"
+	staticruntime "off"
 
 	targetdir "build"
 	startproject "Astranox-Rasterization"
 
 	language "C++"
 	cppdialect "C++20"
-	staticruntime "On"
 
 	defines {
 		"_CRT_SECURE_NO_WARNINGS",

@@ -57,8 +57,7 @@ namespace Astranox
     {
         s_Data = new Renderer2DData;
 
-        std::filesystem::path vertexShaderPath = "../Astranox-Rasterization/assets/shaders/Texture-Vert.spv";
-        std::filesystem::path fragmentShaderPath = "../Astranox-Rasterization/assets/shaders/Texture-Frag.spv";
+        std::filesystem::path shaderPath = "assets/shaders/Texture.glsl";
 
         ShaderDescriptorSetInfo sdsi;
         sdsi.uniformBufferInfos = {
@@ -67,7 +66,7 @@ namespace Astranox
         sdsi.imageSamplerInfos = {
             { 1, { Renderer2DData::maxTextureSlots, VK_SHADER_STAGE_FRAGMENT_BIT, "u_Textures" }}
         };
-        s_Data->shader = Shader::create("Renderer2D", vertexShaderPath, fragmentShaderPath);
+        s_Data->shader = Shader::create(shaderPath);
         s_Data->shader.as<VulkanShader>()->setDescriptorSetInfo(sdsi);
         s_Data->shader.as<VulkanShader>()->createDescriptorSetLayouts();
 
@@ -121,7 +120,7 @@ namespace Astranox
             .shader = s_Data->shader,
             .vertexBufferLayout = vertexBufferLayout,
             .depthTestEnable = true,
-            .depthWriteEnable = false
+            .depthWriteEnable = true
         };
         s_Data->pipeline = Ref<VulkanPipeline>::create(pipelineSpec);
 

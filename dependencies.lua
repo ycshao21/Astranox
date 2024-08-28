@@ -48,6 +48,26 @@ dependencies = {
 	vulkan_memory_allocator = {
 		includeDir = "%{wks.location}/Astranox/vendor/vulkan_memory_allocator",
 	},
+	shaderc = {
+		libName = "shaderc_shared",
+		includeDir = "%{wks.location}/Astranox/vendor/shaderc/glslc/src",
+		windows = {
+			debugLibName = "shaderc_sharedd",
+		},
+	},
+	shaderc_util = {
+		libName = "shaderc_util",
+		includeDir = "%{wks.location}/Astranox/vendor/shaderc/libshaderc_util/include",
+		windows = {
+			debugLibName = "shaderc_utild",
+		},
+	},
+	spirv_cross = {
+		libName = "spirv-cross-core",
+		windows = {
+			debugLibName = "spirv-cross-cored",
+		},
+	},
 }
 
 

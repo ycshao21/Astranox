@@ -1,5 +1,6 @@
 project "Astranox-Rasterization"
 	kind "ConsoleApp"
+	staticruntime "off"
 
 	targetdir ("../bin/" .. outputdir .. "/%{prj.name}")
 	objdir ("../bin-int/" .. outputdir .. "/%{prj.name}")

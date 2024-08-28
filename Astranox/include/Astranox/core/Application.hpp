@@ -13,6 +13,7 @@ namespace Astranox
         uint32_t windowWidth = 1440;
         uint32_t windowHeight = 900;
         bool vsync = true;
+        std::filesystem::path workingDirectory;
     };
 
     /**

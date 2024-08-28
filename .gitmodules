@@ -4,3 +4,6 @@
 [submodule "Astranox/vendor/glfw"]
 	path = Astranox/vendor/glfw
 	url = https://github.com/ycshao21/glfw
+[submodule "Astranox/vendor/shaderc"]
+	path = Astranox/vendor/shaderc
+	url = https://github.com/google/shaderc

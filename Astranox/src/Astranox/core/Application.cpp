@@ -10,6 +10,11 @@ namespace Astranox
     {
         s_Instance = this;
 
+        if (!spec.workingDirectory.empty())
+        {
+            std::filesystem::current_path(spec.workingDirectory);
+        }
+
         WindowSpecification windowSpec;
         windowSpec.title = spec.name;
         windowSpec.width = spec.windowWidth;
@@ -49,7 +54,7 @@ namespace Astranox
             float time = static_cast<float>(glfwGetTime());
             Timestep timestep = time - m_LastFrameTime;
             m_LastFrameTime = time;
-            AST_CORE_DEBUG("Frame time: {0}ms ({1} fps)", timestep.getMilliseconds(), 1.0f / timestep.getSeconds());
+            //AST_CORE_DEBUG("Frame time: {0}ms ({1} fps)", timestep.getMilliseconds(), 1.0f / timestep.getSeconds());
 
             m_Window->pollEvents();
 

@@ -25,6 +25,7 @@ Astranox::Application* Astranox::createApplication()
     appSpec.windowWidth = 1440;
     appSpec.windowHeight = 900;
     appSpec.vsync = true;
+    appSpec.workingDirectory = std::filesystem::current_path();
 
     return new MyApp(appSpec);
 }

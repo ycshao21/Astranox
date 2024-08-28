@@ -33,7 +33,7 @@ namespace Astranox
         friend class VulkanPipeline;
 
     public:
-        VulkanShader(const std::string& name, const std::filesystem::path& vertexPath, const std::filesystem::path& fragmentPath);
+        VulkanShader(const std::filesystem::path& filePath);
         virtual ~VulkanShader();
 
         void createDescriptorSetLayouts();
@@ -58,11 +58,20 @@ namespace Astranox
         ShaderDescriptorSetInfo& getDescriptorSetInfo() { return m_ShaderDescriptorSetInfo; }
 
     private:
-        std::vector<char> readCompiledShaderFile(const std::filesystem::path& codeFile);
-        void createShaders(const std::map<VkShaderStageFlagBits, std::vector<char>>& shaderData);
+        void createShaders(const std::map<VkShaderStageFlagBits, std::vector<uint32_t>>& shaderData);
+
+        std::string readFile(const std::filesystem::path& filepath);
+        std::map<VkShaderStageFlagBits, std::string> parseShader(const std::string& src);
+        void compileOrGetVulkanBinaries(const std::map<VkShaderStageFlagBits, std::string>& shaderSources);
+
+        void reflect(VkShaderStageFlagBits stage, const std::vector<uint32_t>& spirv);
 
     private:
         std::string m_Name;
+        std::filesystem::path m_Filepath;
+
+        std::map<VkShaderStageFlagBits, std::vector<uint32_t>> m_ShaderData;
+
         ShaderDescriptorSetInfo m_ShaderDescriptorSetInfo;
 
         std::vector<VkDescriptorSetLayout> m_DescriptorSetLayouts;
