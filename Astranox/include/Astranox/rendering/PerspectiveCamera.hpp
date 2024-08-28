@@ -45,6 +45,6 @@ namespace Astranox
         glm::vec2 m_LastMousePos{ 0.0f, 0.0f };
 
         float m_MoveSpeed = 4.0f;
-        float m_RotationSpeed = 1000.0f;
+        float m_RotationSpeed = 1.0f;
     };
 }

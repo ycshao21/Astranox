@@ -31,14 +31,27 @@ public:
         auto& window = Astranox::Application::get().getWindow();
         m_Camera->onResize(window.getWidth(), window.getHeight());
 
+        m_Renderer2D->resetStats();
+
         m_Renderer2D->beginScene(*m_Camera);
+        {
+            for (float y = -10.0f; y < 10.0f; y += 0.5f)
+            {
+                for (float x = -10.0f; x < 10.0f; x += 0.5f)
+                {
+                    glm::vec4 color = { (x + 10.0f) / 20.0f, 0.4f, (y + 10.0f) / 20.0f, 1.0f };
+                    m_Renderer2D->drawQuad({ x, y, -5.0f }, { 0.45f, 0.45f }, color);
+                }
+            }
 
-        m_Renderer2D->drawQuad({ 0.0f, 0.0f, 0.0f }, { 1.0f, 1.0f }, { 0.8f, 0.2f, 0.3f, 0.5f });
-        m_Renderer2D->drawQuad({ 0.7f, -0.7f, -1.0f }, { 1.5f, 2.5f }, { 0.2f, 0.3f, 0.8f, 0.5f });
-        m_Renderer2D->drawQuad({ -0.7f, 0.7f, -0.5f }, { 1.4f, 0.7f }, { 0.3f, 0.8f, 0.2f, 0.5f });
-        //m_Renderer2D->drawQuad({ 0.4f, 0.4f, -1.5f }, { 1.8f, 1.8f }, m_Texture);
-
+            m_Renderer2D->drawQuad({ -0.8f, 0.4f, -3.0f }, { 1.2f, 1.5f }, { 0.2f, 0.3f, 0.8f, 1.0f });
+            m_Renderer2D->drawRotatedQuad({ 0.7f, -0.7f, -1.5f }, { 1.4f, 0.8f }, -30.0f, { 0.3f, 0.8f, 0.2f, 1.0f });
+            m_Renderer2D->drawRotatedQuad({ 0.0f, 0.0f, 0.0f }, { 1.0f, 1.0f }, degrees, { 0.8f, 0.2f, 0.3f, 0.8f });
+            //m_Renderer2D->drawQuad({ 0.4f, 0.4f, -1.5f }, { 1.8f, 1.8f }, m_Texture);
+        }
         m_Renderer2D->endScene();
+
+        degrees += delta * ts;
     }
 
     virtual void onEvent(Astranox::Event& event) override
@@ -52,6 +65,9 @@ private:
     Astranox::Ref<Astranox::PerspectiveCamera> m_Camera = nullptr;
 
     Astranox::Ref<Astranox::Texture2D> m_Texture;
+
+    float degrees = 0.0f;
+    float delta = 100.0f;
 };
 
 

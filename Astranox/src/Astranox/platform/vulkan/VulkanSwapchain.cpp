@@ -321,7 +321,7 @@ namespace Astranox
         }
     }
 
-    inline VkCommandBuffer VulkanSwapchain::getCurrentCommandBuffer()
+    VkCommandBuffer VulkanSwapchain::getCurrentCommandBuffer()
     {
         return m_CommandBuffers[Renderer::getCurrentFrameIndex()];
     }

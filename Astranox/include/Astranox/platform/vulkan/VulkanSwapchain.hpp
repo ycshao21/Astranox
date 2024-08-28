@@ -43,8 +43,6 @@ namespace Astranox
         VkRenderPass getRenderPass() { return m_RenderPass; }
         uint32_t getImageCount() const { return m_Images.size(); }
 
-        //uint32_t getCurrentFrameIndex() const { return m_CurrentFrameIndex; }
-
         VkFramebuffer getCurrentFramebuffer() { return m_Framebuffers[m_CurrentImageIndex]; }
         VkCommandBuffer getCurrentCommandBuffer();
 

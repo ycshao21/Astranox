@@ -49,7 +49,7 @@ namespace Astranox
             float time = static_cast<float>(glfwGetTime());
             Timestep timestep = time - m_LastFrameTime;
             m_LastFrameTime = time;
-            //AST_CORE_DEBUG("Frame time: {0}ms", timestep.getMilliseconds());
+            AST_CORE_DEBUG("Frame time: {0}ms ({1} fps)", timestep.getMilliseconds(), 1.0f / timestep.getSeconds());
 
             m_Window->pollEvents();
 

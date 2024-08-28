@@ -15,13 +15,6 @@
 
 namespace Astranox
 {
-    constexpr glm::vec4 s_QuadVertexPositions[] = {
-        { -0.5f, -0.5f, 0.0f, 1.0f }, 
-        {  0.5f, -0.5f, 0.0f, 1.0f },
-        {  0.5f,  0.5f, 0.0f, 1.0f },
-        { -0.5f,  0.5f, 0.0f, 1.0f }
-    };
-
     struct QuadVertex
     {
         glm::vec3 position;
@@ -33,9 +26,9 @@ namespace Astranox
 
     struct Renderer2DData
     {
-        const uint32_t maxQuads = 10000;
-        const uint32_t maxVertices = maxQuads * 4;
-        const uint32_t maxIndices = maxQuads * 6;
+        static const uint32_t maxQuads = 10000;
+        static const uint32_t maxVertices = maxQuads * 4;
+        static const uint32_t maxIndices = maxQuads * 6;
         static const uint32_t maxTextureSlots = 32;
 
         Ref<VulkanPipeline> pipeline;
@@ -52,6 +45,10 @@ namespace Astranox
 
         std::array<Ref<Texture2D>, maxTextureSlots> textureSlots;
         uint32_t textureSlotIndex = 1;  // 0: white texture
+
+        glm::vec4 quadVertexPositions[4];
+
+        Renderer2D::Statistics stats;
     };
 
     static Renderer2DData* s_Data = nullptr;
@@ -68,7 +65,7 @@ namespace Astranox
             { 0, { 1, VK_SHADER_STAGE_VERTEX_BIT, "u_Camera" } },
         };
         sdsi.imageSamplerInfos = {
-            { 1, { s_Data->maxTextureSlots, VK_SHADER_STAGE_FRAGMENT_BIT, "u_Textures" }}
+            { 1, { Renderer2DData::maxTextureSlots, VK_SHADER_STAGE_FRAGMENT_BIT, "u_Textures" }}
         };
         s_Data->shader = Shader::create("Renderer2D", vertexShaderPath, fragmentShaderPath);
         s_Data->shader.as<VulkanShader>()->setDescriptorSetInfo(sdsi);
@@ -83,22 +80,23 @@ namespace Astranox
             {ShaderDataType::Float, "a_TexIndex"},
             {ShaderDataType::Float, "a_TilingFactor"}
         };
-        s_Data->quadVB = VertexBuffer::create(s_Data->maxVertices * sizeof(QuadVertex));
+        s_Data->quadVB = VertexBuffer::create(Renderer2DData::maxVertices * sizeof(QuadVertex));
 
-        s_Data->quadVertexBufferBase = new QuadVertex[s_Data->maxVertices];
+        s_Data->quadVertexBufferBase = new QuadVertex[Renderer2DData::maxVertices];
         // <<< Vertex buffer
 
         // Index buffer >>>
-        Index* quadIndices = new Index[s_Data->maxIndices];
+        Index* quadIndices = new Index[Renderer2DData::maxIndices];
 
         uint32_t offset = 0;
-        for (uint32_t i = 0; i < s_Data->maxIndices; i += 6)
+        for (uint32_t i = 0; i < Renderer2DData::maxIndices; i += 6)
         {
             /*
              * [NOTE] Each quad is made up of two triangles, hence it has 4 vertices and 6 indices.
              *  3---2
              *  |  /|
              *  | / |
+             *  |/  |
              *  0---1
              * Indices: 0, 1, 2, 2, 3, 0
             */
@@ -112,7 +110,7 @@ namespace Astranox
 
             offset += 4;
         }
-        s_Data->quadIB = IndexBuffer::create(quadIndices, s_Data->maxIndices * sizeof(Index));
+        s_Data->quadIB = IndexBuffer::create(quadIndices, Renderer2DData::maxIndices * sizeof(Index));
         delete[] quadIndices;
         // <<< Index buffer
 
@@ -131,11 +129,16 @@ namespace Astranox
         s_Data->descriptorManager = Ref<VulkanDescriptorManager>::create(s_Data->shader);
         s_Data->descriptorManager->setInput("u_Camera", s_Data->cameraUBA);
 
-        for (uint32_t i = 0; i < s_Data->maxTextureSlots; ++i)
+        for (uint32_t i = 0; i < Renderer2DData::maxTextureSlots; ++i)
         {
             s_Data->descriptorManager->setInput("u_Textures", s_Data->whiteTexture, i);
         }
         s_Data->descriptorManager->upload();
+
+        s_Data->quadVertexPositions[0] = { -0.5f, -0.5f, 0.0f, 1.0f };
+        s_Data->quadVertexPositions[1] = {  0.5f, -0.5f, 0.0f, 1.0f };
+        s_Data->quadVertexPositions[2] = {  0.5f,  0.5f, 0.0f, 1.0f };
+        s_Data->quadVertexPositions[3] = { -0.5f,  0.5f, 0.0f, 1.0f };
     }
 
     void Renderer2D::shutdown()
@@ -208,10 +211,16 @@ namespace Astranox
             );
 
             Renderer::endRenderPass(swapchain->getCurrentCommandBuffer());
+
+            s_Data->stats.drawCalls++;
         }
 
         Renderer::endFrame();
     }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Quad rendering
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     void Renderer2D::drawQuad(const glm::vec2& position, const glm::vec2& size, const glm::vec4& color)
     {
@@ -235,7 +244,7 @@ namespace Astranox
         constexpr size_t quadVertexCount = 4;
         for (size_t i = 0; i < quadVertexCount; ++i)
         {
-            s_Data->quadVertexBufferPtr->position = transform * s_QuadVertexPositions[i];
+            s_Data->quadVertexBufferPtr->position = transform * s_Data->quadVertexPositions[i];
             s_Data->quadVertexBufferPtr->color = color;
             s_Data->quadVertexBufferPtr->texCoord = texCoords[i];
             s_Data->quadVertexBufferPtr->texIndex = textureIndex;
@@ -243,6 +252,8 @@ namespace Astranox
         }
 
         s_Data->quadIndexCount += 6;
+
+        s_Data->stats.quadCount++;
     }
 
     void Renderer2D::drawQuad(const glm::vec2& position, const glm::vec2& size, const Ref<Texture2D>& texture, float tilingFactor, const glm::vec4& tintColor)
@@ -284,7 +295,7 @@ namespace Astranox
         constexpr size_t quadVertexCount = 4;
         for (size_t i = 0; i < quadVertexCount; ++i)
         {
-            s_Data->quadVertexBufferPtr->position = transform * s_QuadVertexPositions[i];
+            s_Data->quadVertexBufferPtr->position = transform * s_Data->quadVertexPositions[i];
             s_Data->quadVertexBufferPtr->color = { 1.0f, 1.0f, 1.0f, 1.0f };
             s_Data->quadVertexBufferPtr->texCoord = texCoords[i];
             s_Data->quadVertexBufferPtr->texIndex = textureIndex;
@@ -293,5 +304,54 @@ namespace Astranox
         }
 
         s_Data->quadIndexCount += 6;
+
+        s_Data->stats.quadCount++;
+    }
+
+    void Renderer2D::drawRotatedQuad(const glm::vec2& position, const glm::vec2& size, float degrees, const glm::vec4& color)
+    {
+        drawRotatedQuad({ position.x, position.y, 0.0f }, size, degrees, color);
+    }
+
+    void Renderer2D::drawRotatedQuad(const glm::vec3& position, const glm::vec2& size, float degrees, const glm::vec4& color)
+    {
+        glm::mat4 transform = glm::translate(glm::mat4(1.0f), position)
+            * glm::rotate(glm::mat4(1.0f), glm::radians(degrees), { 0.0f, 0.0f, 1.0f })
+            * glm::scale(glm::mat4(1.0f), { size.x, size.y, 1.0f });
+
+        const float textureIndex = 0.0f;  // White texture
+        const float tilingFactor = 1.0f;
+
+        constexpr glm::vec2 texCoords[] = {
+            { 0.0f, 0.0f },
+            { 1.0f, 0.0f },
+            { 1.0f, 1.0f },
+            { 0.0f, 1.0f }
+        };
+
+        constexpr size_t quadVertexCount = 4;
+        for (size_t i = 0; i < quadVertexCount; ++i)
+        {
+            s_Data->quadVertexBufferPtr->position = transform * s_Data->quadVertexPositions[i];
+            s_Data->quadVertexBufferPtr->color = color;
+            s_Data->quadVertexBufferPtr->texCoord = texCoords[i];
+            s_Data->quadVertexBufferPtr->texIndex = textureIndex;
+            s_Data->quadVertexBufferPtr++;
+        }
+
+        s_Data->quadIndexCount += 6;
+
+        s_Data->stats.quadCount++;
+    }
+
+    Renderer2D::Statistics Renderer2D::getStats() const
+    {
+        return s_Data->stats;
+    }
+
+    void Renderer2D::resetStats()
+    {
+        s_Data->stats.drawCalls = 0;
+        s_Data->stats.quadCount = 0;
     }
 }

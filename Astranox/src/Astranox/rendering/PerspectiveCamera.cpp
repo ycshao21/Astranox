@@ -72,8 +72,8 @@ namespace Astranox
         {
             moved = true;
 
-            float yawDelta = delta.x * m_RotationSpeed * ts.getSeconds();
-            float pitchDelta = delta.y * m_RotationSpeed * ts.getSeconds();
+            float yawDelta = delta.x * m_RotationSpeed;
+            float pitchDelta = delta.y * m_RotationSpeed;
 
             glm::quat q = glm::normalize(
                 glm::cross(
