@@ -33,6 +33,7 @@ namespace Astranox
         void renderGeometry(
             VkCommandBuffer commandBuffer,
             Ref<VulkanPipeline> pipeline,
+            Ref<VulkanDescriptorManager> dm,
             Ref<VertexBuffer> vertexBuffer,
             Ref<IndexBuffer> indexBuffer,
             uint32_t indexCount = 1) override;

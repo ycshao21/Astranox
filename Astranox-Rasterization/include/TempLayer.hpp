@@ -26,7 +26,7 @@ public:
         m_Pipeline->createPipeline();
 
         std::filesystem::path texturePath = "../Astranox-Rasterization/assets/textures/viking_room.png";
-        m_Texture = Astranox::Texture::create(texturePath, true);
+        m_Texture = Astranox::Texture2D::create(texturePath, true);
 
         std::filesystem::path meshPath = "../Astranox-Rasterization/assets/models/viking_room.obj";
         m_RoomMesh = Astranox::readMesh(meshPath);
@@ -36,8 +36,8 @@ public:
         m_DescriptorManager = Astranox::Ref<Astranox::VulkanDescriptorManager>::create();
         m_DescriptorManager->init(
             shader.as<Astranox::VulkanShader>()->getDescriptorSetLayout()[0],
-            m_Texture.as<Astranox::VulkanTexture>()->getSampler(),
-            m_Texture.as<Astranox::VulkanTexture>()->getImageView(),
+            m_Texture.as<Astranox::VulkanTexture2D>()->getSampler(),
+            m_Texture.as<Astranox::VulkanTexture2D>()->getImageView(),
             m_CameraUBA
         );
     }
@@ -93,7 +93,7 @@ private:
 
     Astranox::Ref<Astranox::PerspectiveCamera> m_Camera = nullptr;
 
-    Astranox::Ref<Astranox::Texture> m_Texture = nullptr;
+    Astranox::Ref<Astranox::Texture2D> m_Texture = nullptr;
 
     Astranox::Mesh m_RoomMesh;
 

@@ -2,6 +2,7 @@
 #include "RendererAPI.hpp"
 
 #include "Astranox/platform/vulkan/VulkanContext.hpp"
+#include "Astranox/rendering/Texture2D.hpp"
 
 namespace Astranox
 {
@@ -42,6 +43,7 @@ namespace Astranox
         static void renderGeometry(
             VkCommandBuffer commandBuffer,
             Ref<VulkanPipeline> pipeline,
+            Ref<VulkanDescriptorManager> dm,
             Ref<VertexBuffer> vertexBuffer,
             Ref<IndexBuffer> indexBuffer,
             uint32_t indexCount);
@@ -52,10 +54,15 @@ namespace Astranox
             Mesh& mesh,
             uint32_t instanceCount);
 
+    public:
+        static Ref<Texture2D> getWhiteTexture();
+
     private:
         //static VkSampleCountFlagBits getMaxUsableSampleCount();
 
     private:
         inline static RendererAPI* s_RendererAPI = nullptr;
+
+        inline static Ref<Texture2D> s_WhiteTexture = nullptr;
     };
 }

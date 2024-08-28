@@ -8,8 +8,24 @@ namespace Astranox
 {
     struct UniformBufferInfo
     {
-        VkShaderStageFlags shaderStage; 
-        std::string debugName;
+        uint32_t count;
+        VkShaderStageFlags shaderStage;
+        std::string name;
+    };
+
+    struct ImageSamplerInfo
+    {
+        uint32_t arraySize;
+        VkShaderStageFlags shaderStage;
+        std::string name;
+    };
+
+    struct ShaderDescriptorSetInfo
+    {
+        std::map<uint32_t, UniformBufferInfo> uniformBufferInfos;  // [binding, info]
+        std::map<uint32_t, ImageSamplerInfo> imageSamplerInfos;    // [binding, info]
+
+        std::map<std::string, VkWriteDescriptorSet> writeDescriptorSets;  // [name, wd]
     };
 
     class VulkanShader : public Shader
@@ -19,11 +35,6 @@ namespace Astranox
     public:
         VulkanShader(const std::string& name, const std::filesystem::path& vertexPath, const std::filesystem::path& fragmentPath);
         virtual ~VulkanShader();
-
-        void setUniformBufferInfos(const std::map<uint32_t, UniformBufferInfo>& uniformBufferInfos)
-        {
-            m_UniformBufferInfos = uniformBufferInfos;
-        }
 
         void createDescriptorSetLayouts();
         void destroy();
@@ -42,14 +53,17 @@ namespace Astranox
 
         std::vector<VkPipelineShaderStageCreateInfo>& getShaderStageCreateInfos() { return m_ShaderStages; }
 
+        // TEMP
+        void setDescriptorSetInfo(const ShaderDescriptorSetInfo& info) { m_ShaderDescriptorSetInfo = info; }
+        ShaderDescriptorSetInfo& getDescriptorSetInfo() { return m_ShaderDescriptorSetInfo; }
+
     private:
         std::vector<char> readCompiledShaderFile(const std::filesystem::path& codeFile);
         void createShaders(const std::map<VkShaderStageFlagBits, std::vector<char>>& shaderData);
 
     private:
         std::string m_Name;
-
-        std::map<uint32_t, UniformBufferInfo> m_UniformBufferInfos;
+        ShaderDescriptorSetInfo m_ShaderDescriptorSetInfo;
 
         std::vector<VkDescriptorSetLayout> m_DescriptorSetLayouts;
 

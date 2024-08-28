@@ -11,7 +11,7 @@
 #include "Astranox/rendering/VertexBuffer.hpp"
 #include "Astranox/rendering/IndexBuffer.hpp"
 #include "Astranox/rendering/UniformBuffer.hpp"
-#include "Astranox/rendering/Texture.hpp"
+#include "Astranox/rendering/Texture2D.hpp"
 
 #include <vector>
 #include "vk_mem_alloc.h"

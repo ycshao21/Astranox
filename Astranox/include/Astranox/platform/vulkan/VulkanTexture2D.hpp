@@ -1,16 +1,17 @@
 #pragma once
-#include "Astranox/rendering/Texture.hpp"
+#include "Astranox/rendering/Texture2D.hpp"
 #include <filesystem>
 #include <vulkan/vulkan.h>
 #include "vk_mem_alloc.h"
 
 namespace Astranox
 {
-    class VulkanTexture: public Texture
+    class VulkanTexture2D: public Texture2D
     {
     public:
-        VulkanTexture(const std::filesystem::path& path, bool enableMipmaps = true);
-        virtual ~VulkanTexture();
+        VulkanTexture2D(const std::filesystem::path& path, bool enableMipmaps = true);
+        VulkanTexture2D(uint32_t width = 1, uint32_t height = 1, Buffer buffer = {});
+        virtual ~VulkanTexture2D();
 
     public:
         void loadFromFile(const std::filesystem::path& path);
@@ -27,6 +28,15 @@ namespace Astranox
         VkImage getImage() { return m_TextureImage; }
         VkImageView getImageView() { return m_TextureImageView; }
         VkSampler getSampler() { return m_TextureSampler; }
+
+        const VkDescriptorImageInfo& getDescriptorImageInfo() const { return m_DescriptorImageInfo; }
+
+    public:
+        bool operator==(const Texture2D& other) const override
+        {
+            // Temp, compare handles instead
+            return m_Path == other.getPath();
+        }
 
     private:
         uint32_t calculateMipLevels();
@@ -57,5 +67,7 @@ namespace Astranox
         VmaAllocation m_TextureImageAllocation;
         VkImageView m_TextureImageView;
         VkSampler m_TextureSampler;
+
+        VkDescriptorImageInfo m_DescriptorImageInfo{};
     }; 
 }

@@ -15,17 +15,10 @@ namespace Astranox
 {
     namespace VulkanUtils
     {
+        // Required validation layers.
         constexpr std::array<const char*, 1> validationLayers = {
             "VK_LAYER_KHRONOS_validation"
         };
-
-        constexpr std::array<const char*, 1> deviceExtensions = {
-            VK_KHR_SWAPCHAIN_EXTENSION_NAME
-        };
-
-        void checkValidationLayerSupport();
-        void checkInstanceExtensionSupport(const std::vector<const char*>& requiredExtensions);
-        void checkDeviceExtensionSupport(Ref<VulkanPhysicalDevice> physicalDevice);
 
         std::string vkResultToString(VkResult result);
 

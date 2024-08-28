@@ -6,10 +6,27 @@
 
 namespace Astranox
 {
+    static constexpr std::array<const char*, 1> s_DeviceExtensions = {
+        VK_KHR_SWAPCHAIN_EXTENSION_NAME
+    };
+
+    static void checkDeviceExtensionSupport(Ref<VulkanPhysicalDevice> physicalDevice)
+    {
+        for (const char* extensionName : s_DeviceExtensions)
+        {
+            AST_CORE_ASSERT(
+                physicalDevice->isExtentionSupported(extensionName),
+                "Physical device does not support {0}!", extensionName
+            );
+        }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////
+
     VulkanDevice::VulkanDevice(const Ref<VulkanPhysicalDevice>& physicalDevice)
         : m_PhysicalDevice(physicalDevice)
     {
-        VulkanUtils::checkDeviceExtensionSupport(m_PhysicalDevice);
+        checkDeviceExtensionSupport(m_PhysicalDevice);
 
         std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
         float queuePriority = 1.0f;
@@ -51,8 +68,8 @@ namespace Astranox
             .flags = 0,
             .queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size()),
             .pQueueCreateInfos = queueCreateInfos.data(),
-            .enabledExtensionCount = static_cast<uint32_t>(VulkanUtils::deviceExtensions.size()),
-            .ppEnabledExtensionNames = VulkanUtils::deviceExtensions.data(),
+            .enabledExtensionCount = static_cast<uint32_t>(s_DeviceExtensions.size()),
+            .ppEnabledExtensionNames = s_DeviceExtensions.data(),
             .pEnabledFeatures = &m_PhysicalDevice->getFeatures()
         };
         if (VK_ENABLE_VALIDATION_LAYERS)

@@ -101,14 +101,22 @@ namespace Astranox
         vkCmdDrawIndexed(commandBuffer, mesh.getIndexBuffer()->getCount(), instanceCount, 0, 0, 0);
     }
 
-    void VulkanRenderer::renderGeometry(VkCommandBuffer commandBuffer, Ref<VulkanPipeline> pipeline, Ref<VertexBuffer> vertexBuffer, Ref<IndexBuffer> indexBuffer, uint32_t indexCount)
+    void VulkanRenderer::renderGeometry(VkCommandBuffer commandBuffer, Ref<VulkanPipeline> pipeline, Ref<VulkanDescriptorManager> dm, Ref<VertexBuffer> vertexBuffer, Ref<IndexBuffer> indexBuffer, uint32_t indexCount)
     {
+        uint32_t frameIndex = Renderer::getCurrentFrameIndex();
+
         VkDeviceSize offsets[] = { 0 };
         VkBuffer vb = vertexBuffer.as<VulkanVertexBuffer>()->getRaw();
         vkCmdBindVertexBuffers(commandBuffer, 0, 1, &vb, offsets);
 
         VkBuffer ib = indexBuffer.as<VulkanIndexBuffer>()->getRaw();
         vkCmdBindIndexBuffer(commandBuffer, ib, 0, VK_INDEX_TYPE_UINT32);
+
+        //VkDescriptorSet descriptorSet = dm->getDescriptorSets(frameIndex)[0];
+        //if (descriptorSet != VK_NULL_HANDLE)
+        //{
+        //    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->getLayout(), 0, 1, &descriptorSet, 0, nullptr);
+        //}
 
         vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, 0);
     }

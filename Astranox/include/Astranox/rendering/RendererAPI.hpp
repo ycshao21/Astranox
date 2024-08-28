@@ -2,6 +2,7 @@
 #include "Mesh.hpp"
 #include <vulkan/vulkan.h>
 #include "Astranox/platform/vulkan/VulkanPipeline.hpp"
+#include "Astranox/platform/vulkan/VulkanDescriptorManager.hpp"
 
 namespace Astranox
 {
@@ -33,6 +34,7 @@ namespace Astranox
         virtual void renderGeometry(
             VkCommandBuffer commandBuffer,
             Ref<VulkanPipeline> pipeline,
+            Ref<VulkanDescriptorManager> dm,
             Ref<VertexBuffer> vertexBuffer,
             Ref<IndexBuffer> indexBuffer,
             uint32_t instanceCount = 1) = 0;

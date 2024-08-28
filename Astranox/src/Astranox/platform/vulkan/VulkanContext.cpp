@@ -13,6 +13,9 @@
 
 namespace Astranox
 {
+    /**
+     * @brief Callback function for the Vulkan validation layer.
+     */
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
         VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
         VkDebugUtilsMessageTypeFlagsEXT messageType,
@@ -23,9 +26,90 @@ namespace Astranox
         return VK_FALSE;
     }
 
+    /////////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * @brief Check if the required validation layers are available.
+     */
+    static void checkValidationLayerSupport()
+    {
+        uint32_t supportedLayerCount = 0;
+        ::vkEnumerateInstanceLayerProperties(&supportedLayerCount, nullptr);
+
+        std::vector<VkLayerProperties> supportedLayers(supportedLayerCount);
+        ::vkEnumerateInstanceLayerProperties(&supportedLayerCount, supportedLayers.data());
+
+        AST_CORE_DEBUG("Found {0} supported validation layers.", supportedLayerCount);
+        //for (size_t i = 0; i < supportedLayerCount; i++) {
+        //    AST_CORE_DEBUG("  {0}: {1}", i + 1, supportedLayers[i].layerName);
+        //}
+        AST_CORE_DEBUG("Required {0} validation layers:", VulkanUtils::validationLayers.size());
+        for (size_t i = 0; i < VulkanUtils::validationLayers.size(); ++i) {
+            AST_CORE_DEBUG("  {0}: {1}", i + 1, VulkanUtils::validationLayers[i]);
+        }
+
+        for (const char* layerName : VulkanUtils::validationLayers) {
+            bool layerFound = false;
+
+            for (const auto& layerProperties : supportedLayers) {
+                if (std::strcmp(layerName, layerProperties.layerName) == 0) {
+                    layerFound = true;
+                    break;
+                }
+            }
+
+            if (!layerFound) {
+                AST_CORE_ASSERT(false, "Validation layer {0} requested, but not available!", layerName);
+                return;
+            }
+        }
+
+        AST_CORE_DEBUG("All required validation layers are available.");
+    }
+
+    static void checkInstanceExtensionSupport(const std::vector<const char*>& requiredExtensions)
+    {
+        uint32_t extensionCount = 0;
+        ::vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
+
+        std::vector<VkExtensionProperties> availableExtensions(extensionCount);
+        ::vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, availableExtensions.data());
+
+        AST_CORE_DEBUG("Found {0} available instance extensions.", extensionCount);
+        //for (size_t i = 0; i < extensionCount; i++) {
+        //    AST_CORE_DEBUG("  {0}: {1}", i + 1, availableExtensions[i].extensionName);
+        //}
+        AST_CORE_DEBUG("Required {0} instance extensions:", requiredExtensions.size());
+        for (size_t i = 0; i < requiredExtensions.size(); i++) {
+            AST_CORE_DEBUG("  {0}: {1}", i + 1, requiredExtensions[i]);
+        }
+
+        for (const char* extensionName : requiredExtensions) {
+            bool extensionFound = false;
+
+            for (const auto& extension : availableExtensions) {
+                if (std::strcmp(extensionName, extension.extensionName) == 0) {
+                    extensionFound = true;
+                    break;
+                }
+            }
+
+            if (!extensionFound) {
+                AST_CORE_ASSERT(false, "Extension {0} requested, but not available!", extensionName);
+                return;
+            }
+        }
+
+        AST_CORE_DEBUG("All required extensions are available.");
+    }
+
+    /////////////////////////////////////////////////////////////////////////////////
+
+    static Ref<VulkanContext> s_ContextInstance = nullptr;
+
     void VulkanContext::init(uint32_t& width, uint32_t& height)
     {
-        s_Context = this;
+        s_ContextInstance = this;
         AST_CORE_INFO("Creating Vulkan context...");
 
         createInstance();
@@ -66,12 +150,17 @@ namespace Astranox
         ::vkDestroyInstance(s_Instance, nullptr);
         s_Instance = nullptr;
 
-        s_Context = nullptr;
+        s_ContextInstance = nullptr;
     }
 
     void VulkanContext::swapBuffers()
     {
         m_Swapchain->present();
+    }
+
+    Ref<VulkanContext> VulkanContext::get()
+    {
+        return s_ContextInstance;
     }
 
     void VulkanContext::createInstance()
@@ -102,7 +191,7 @@ namespace Astranox
 
         if (VK_ENABLE_VALIDATION_LAYERS) {
             AST_CORE_DEBUG("Validation layers are enabled.");
-            VulkanUtils::checkValidationLayerSupport();
+            checkValidationLayerSupport();
             createInfo.enabledLayerCount = static_cast<uint32_t>(VulkanUtils::validationLayers.size());
             createInfo.ppEnabledLayerNames = VulkanUtils::validationLayers.data();
         }
@@ -115,7 +204,7 @@ namespace Astranox
         if (VK_ENABLE_VALIDATION_LAYERS) {
             requiredExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
         }
-        VulkanUtils::checkInstanceExtensionSupport(requiredExtensions);
+        checkInstanceExtensionSupport(requiredExtensions);
         createInfo.enabledExtensionCount = static_cast<uint32_t>(requiredExtensions.size());
         createInfo.ppEnabledExtensionNames = requiredExtensions.data();
 

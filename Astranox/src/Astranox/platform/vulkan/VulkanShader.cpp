@@ -99,7 +99,7 @@ namespace Astranox
         for (uint32_t setIndex = 0; setIndex < setCount; ++setIndex)
         {
             std::vector<VkDescriptorSetLayoutBinding> layoutBindings;
-            for (auto& [binding, info] : m_UniformBufferInfos)
+            for (auto& [binding, uniformBuffer] : m_ShaderDescriptorSetInfo.uniformBufferInfos)
             {
                 VkDescriptorType descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 
@@ -108,9 +108,41 @@ namespace Astranox
                     .binding = binding,
                     .descriptorType = descriptorType,
                     .descriptorCount = 1,
-                    .stageFlags = info.shaderStage,
+                    .stageFlags = uniformBuffer.shaderStage,
                     .pImmutableSamplers = nullptr,
                 };
+
+                VkWriteDescriptorSet& writeDescriptorSet = m_ShaderDescriptorSetInfo.writeDescriptorSets[uniformBuffer.name];
+                writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                writeDescriptorSet.dstBinding = binding;
+                writeDescriptorSet.dstArrayElement = 0;
+                writeDescriptorSet.descriptorCount = 1;
+                writeDescriptorSet.descriptorType = descriptorType;
+                writeDescriptorSet.pImageInfo = nullptr;
+                writeDescriptorSet.pTexelBufferView = nullptr;
+            }
+
+            for (auto& [binding, imageSampler] : m_ShaderDescriptorSetInfo.imageSamplerInfos)
+            {
+                VkDescriptorType descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+
+                VkDescriptorSetLayoutBinding& bindingInfo = layoutBindings.emplace_back();
+                bindingInfo = {
+                    .binding = binding,
+                    .descriptorType = descriptorType,
+                    .descriptorCount = imageSampler.arraySize,
+                    .stageFlags = imageSampler.shaderStage,
+                    .pImmutableSamplers = nullptr,
+                };
+
+                VkWriteDescriptorSet& writeDescriptorSet = m_ShaderDescriptorSetInfo.writeDescriptorSets[imageSampler.name];
+                writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                writeDescriptorSet.dstBinding = binding;
+                writeDescriptorSet.dstArrayElement = 0;
+                writeDescriptorSet.descriptorCount = imageSampler.arraySize;
+                writeDescriptorSet.descriptorType = descriptorType;
+                writeDescriptorSet.pImageInfo = nullptr;
+                writeDescriptorSet.pTexelBufferView = nullptr;
             }
 
             VkDescriptorSetLayoutCreateInfo layoutInfo{

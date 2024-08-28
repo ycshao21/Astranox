@@ -25,16 +25,20 @@ namespace Astranox
     {
         s_RendererConfig.framesInFlight = VulkanContext::get()->getSwapchain()->getImageCount();
 
+        // Initialize renderer api
+        s_RendererAPI = initRendererAPI();
+
         // Load shaders
 
         // Load textures
-
-        // Initialize renderer api
-        s_RendererAPI = initRendererAPI();
+        constexpr uint32_t whiteTextureData = 0xffffffff;
+        s_WhiteTexture = Texture2D::create(1, 1, Buffer(&whiteTextureData, sizeof(uint32_t)));
     }
 
     void Renderer::shutdown()
     {
+        s_WhiteTexture = nullptr;
+
         delete s_RendererAPI;
     }
 
@@ -68,14 +72,19 @@ namespace Astranox
         s_RendererAPI->endRenderPass(commandBuffer);
     }
 
-    void Renderer::renderGeometry(VkCommandBuffer commandBuffer, Ref<VulkanPipeline> pipeline, Ref<VertexBuffer> vertexBuffer, Ref<IndexBuffer> indexBuffer, uint32_t indexCount)
+    void Renderer::renderGeometry(VkCommandBuffer commandBuffer, Ref<VulkanPipeline> pipeline, Ref<VulkanDescriptorManager> dm, Ref<VertexBuffer> vertexBuffer, Ref<IndexBuffer> indexBuffer, uint32_t indexCount)
     {
-        s_RendererAPI->renderGeometry(commandBuffer, pipeline, vertexBuffer, indexBuffer, indexCount);
+        s_RendererAPI->renderGeometry(commandBuffer, pipeline, dm, vertexBuffer, indexBuffer, indexCount);
     }
 
     void Renderer::renderMesh(VkCommandBuffer commandBuffer, Ref<VulkanPipeline> pipeline, Mesh& mesh, uint32_t instanceCount)
     {
         s_RendererAPI->renderMesh(commandBuffer, pipeline, mesh, instanceCount);
+    }
+
+    Ref<Texture2D> Renderer::getWhiteTexture()
+    {
+        return s_WhiteTexture;
     }
 
     //VkSampleCountFlagBits Renderer::getMaxUsableSampleCount()

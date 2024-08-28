@@ -18,8 +18,6 @@ namespace Astranox
 
         Ref<UniformBuffer> getCurrentBuffer() override
         {
-            //auto swapchain = VulkanContext::get()->getSwapchain();
-            //uint32_t currentFrameIndex = swapchain->getCurrentFrameIndex();
             uint32_t currentFrameIndex = Renderer::getCurrentFrameIndex();
             return m_UniformBuffers[currentFrameIndex];
         }

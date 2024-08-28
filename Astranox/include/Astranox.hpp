@@ -12,7 +12,7 @@
 #include "Astranox/rendering/VertexBufferLayout.hpp"
 
 #include "Astranox/platform/vulkan/VulkanContext.hpp"
-#include "Astranox/platform/vulkan/VulkanTexture.hpp"
+#include "Astranox/platform/vulkan/VulkanTexture2D.hpp"
 #include "Astranox/platform/vulkan/VulkanRenderer.hpp"
 #include "Astranox/platform/vulkan/VulkanShader.hpp"
 #include "Astranox/platform/vulkan/VulkanUniformBufferArray.hpp"
